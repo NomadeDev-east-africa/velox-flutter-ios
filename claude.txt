@@ -1,0 +1,46 @@
+# Nomade Client - Senior Flutter Rules
+
+## Architecture
+- **Pattern :** Clean Architecture avec séparation Data (Modèles, Repositories), Domain (Entités, UseCase), Présentation (UI, Notifiers).
+- **Gestion d'état :** Riverpod 2.x avec génération de code via annotations `@riverpod`.
+- **Notifiers :** Utiliser `AsyncNotifier` pour données asynchrones, `Notifier` pour synchrones.
+- **Modèles :** Tous les modèles doivent être immuables via `freezed` (data classes, unions).
+
+## Bonnes pratiques d'optimisation UI & Restauration d’État
+- Toujours différer les chargements dans `initState` via `WidgetsBinding.instance.addPostFrameCallback` pour éviter les erreurs `setState/notifyListeners` durant build.
+- Grouper les appels à `notifyListeners()` afin de limiter les rebuilds redondants.
+- Favoriser les widgets `const` partout où possible.
+- Découper les listes lourdes en pagination ou chargements progressifs pour réduire la charge initiale.
+- Éviter le code bloquant ou synchrones dans `build()` ; préférer `FutureBuilder`/`StreamBuilder`.
+- Implémenter des filtres/seuils sur les mises à jour fréquentes (position GPS, données en temps-réel).
+- Annuler proprement les subscriptions et streams dans le dispose des notifiers.
+- Documenter la séquence d'initialisation et de restauration d’état, avec gestion claire du cache Hive.
+- Surveiller les erreurs réseau et prévoir un retry exponentiel pour stabilité.
+
+## Standards de code
+- UI : privilégier `StatelessWidget` et `ConsumerWidget` sur `StatefulWidget`.
+- Utiliser la bibliothèque `gap` pour les espacements au lieu de `SizedBox`.
+- La logique métier doit résider exclusivement dans les Notifiers/Riverpod, pas dans les widgets.
+- Si utilisé, respecter les conventions de routing via `go_router`.
+- Toujours prendre en compte les états chargement, erreur et données dans `AsyncValue.when`.
+
+## Commandes utiles au quotidien
+- Générer le code Riverpod et freezed :  
+  `dart run build_runner build --delete-conflicting-outputs`
+- Nettoyer le projet :  
+  `flutter clean`
+- Mettre à jour les packages :  
+  `flutter pub get`
+- Lancer les tests unitaires et d’intégration :  
+  `flutter test`
+- Vérifier les mises à jour des packages obsolètes :  
+  `flutter pub outdated`
+
+## Environnement recommandé de développement
+- Utiliser un émulateur Android avec Google Play (exemple : Pixel 6a, API 36.1).
+- Toujours tester sur appareil physique pour valider performances, notifications, géolocalisation.
+- Configurer un système de monitoring/logging étendu pour capter les erreurs en background.
+
+---
+
+N’hésite pas à me demander des exemples de code ou plans d’optimisation pour les phases 5 et 6 d’intégration pour l’app client.

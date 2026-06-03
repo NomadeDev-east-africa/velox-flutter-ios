@@ -6,18 +6,8 @@ import 'package:nomade_client/screens/auth-firebase/auth/sign_in_screen.dart';
 import 'package:nomade_client/screens/taxi/taxi_home_screen.dart';
 import 'package:nomade_client/screens/food/home_food/home_screen_food.dart';
 import 'package:nomade_client/screens/profile/profile_screen.dart';
-
-// Kinetic Monolith design system colors
-const _bg         = Color(0xFF0E0E0E);
-const _surfaceLow = Color(0xFF131313);
-const _surface    = Color(0xFF1A1919);
-const _surfaceHigh= Color(0xFF20201F);
-const _surfaceTop = Color(0xFF262626);
-const _primary    = Color(0xFF9FFF88);
-const _onPrimary  = Color(0xFF026400);
-const _onSurface  = Color(0xFFFFFFFF);
-const _onSurfaceVariant = Color(0xFFADAAAA);
-const _outlineVariant   = Color(0xFF484847);
+import 'package:nomade_client/screens/history/order_history_screen.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 
 class HomeScreenApp extends ConsumerStatefulWidget {
   const HomeScreenApp({super.key});
@@ -92,21 +82,20 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
   }
 
   // ── HEADER ───────────────────────────────────────────────────────────────
-  Widget _buildHeader(String firstName) {
+  Widget _buildHeader(String firstName, AppColors c) {
     final userState = ref.watch(userNotifierProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Avatar
           Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _surfaceHigh,
-              border: Border.all(color: _primary.withValues(alpha: 0.4), width: 2),
+              color: c.surfaceHigh,
+              border: Border.all(color: c.primary.withValues(alpha: 0.4), width: 2),
             ),
             child: ClipOval(
               child: userState.displayPhotoUrl != null
@@ -114,25 +103,24 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                       userState.displayPhotoUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) =>
-                          const Icon(Icons.person, color: _primary, size: 26),
+                          Icon(Icons.person, color: c.primary, size: 26),
                     )
-                  : const Icon(Icons.person, color: _primary, size: 26),
+                  : Icon(Icons.person, color: c.primary, size: 26),
             ),
           ),
           const SizedBox(width: 12),
-          // Greeting
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.location_on, color: _onSurfaceVariant, size: 12),
+                    Icon(Icons.location_on, color: c.onSurfaceVariant, size: 12),
                     const SizedBox(width: 3),
-                    const Text(
+                    Text(
                       'DJIBOUTI',
                       style: TextStyle(
-                        color: _onSurfaceVariant,
+                        color: c.onSurfaceVariant,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1.5,
@@ -144,7 +132,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                 Text(
                   'Bonjour $firstName',
                   style: GoogleFonts.poppins(
-                    color: _onSurface,
+                    color: c.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
@@ -153,9 +141,8 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
               ],
             ),
           ),
-          // Logo app
           Image.asset(
-            'assets/images/logo_velox.webp',
+            'assets/images/logo-velox.png',
             height: 90,
             fit: BoxFit.contain,
           ),
@@ -165,13 +152,13 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
   }
 
   // ── TAGLINE ───────────────────────────────────────────────────────────────
-  Widget _buildTagline() {
+  Widget _buildTagline(AppColors c) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
       child: Text(
         '✦  Clique, Chill, on livre',
         style: GoogleFonts.inter(
-          color: _primary,
+          color: c.primary,
           fontSize: 15,
           fontStyle: FontStyle.italic,
           fontWeight: FontWeight.w300,
@@ -183,12 +170,11 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
   }
 
   // ── POINTS FIDÉLITÉ ───────────────────────────────────────────────────────
-  Widget _buildLoyaltyCard() {
+  Widget _buildLoyaltyCard(AppColors c) {
     final statsAsync = ref.watch(orderStatsProvider);
     final points = statsAsync.whenOrNull(data: (s) => s.loyaltyPoints) ?? 0;
     final displayPts = _formatNumber(points.toDouble(), isInt: true);
 
-    // Badge selon les points
     String badge;
     if (points >= 500) {
       badge = 'VIP';
@@ -202,9 +188,9 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
       margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
       decoration: BoxDecoration(
-        color: _surfaceLow,
+        color: c.surfaceLow,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _outlineVariant.withValues(alpha: 0.15)),
+        border: Border.all(color: c.outlineVariant.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -212,10 +198,10 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'POINTS FIDÉLITÉ',
                   style: TextStyle(
-                    color: _onSurfaceVariant,
+                    color: c.onSurfaceVariant,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.8,
@@ -228,18 +214,18 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                   children: [
                     Text(
                       displayPts,
-                      style: const TextStyle(
-                        color: _onSurface,
+                      style: TextStyle(
+                        color: c.onSurface,
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -1,
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Text(
+                    Text(
                       'pts',
                       style: TextStyle(
-                        color: _onSurfaceVariant,
+                        color: c.onSurfaceVariant,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -250,7 +236,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                 Text(
                   '1 commande = 10 pts',
                   style: TextStyle(
-                    color: _primary.withValues(alpha: 0.7),
+                    color: c.primary.withValues(alpha: 0.7),
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -261,13 +247,13 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: _primary,
+              color: c.primary,
               borderRadius: BorderRadius.circular(50),
             ),
             child: Text(
               badge,
-              style: const TextStyle(
-                color: _onPrimary,
+              style: TextStyle(
+                color: c.onPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1,
@@ -285,6 +271,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
     required String subtitle,
     required String imageAsset,
     required VoidCallback onTap,
+    required AppColors c,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -292,33 +279,31 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: _surface,
+          color: c.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _outlineVariant.withValues(alpha: 0.12)),
+          border: Border.all(color: c.outlineVariant.withValues(alpha: 0.12)),
         ),
         child: Row(
           children: [
-            // Icon container
             Container(
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: _surfaceHigh,
+                color: c.surfaceHigh,
                 borderRadius: BorderRadius.circular(14),
               ),
               padding: const EdgeInsets.all(10),
               child: Image.asset(imageAsset, fit: BoxFit.contain),
             ),
             const SizedBox(width: 16),
-            // Texts
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: _onSurface,
+                    style: TextStyle(
+                      color: c.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       letterSpacing: -0.3,
@@ -327,23 +312,22 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                   const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: _onSurfaceVariant,
+                    style: TextStyle(
+                      color: c.onSurfaceVariant,
                       fontSize: 13,
                     ),
                   ),
                 ],
               ),
             ),
-            // Rating
             Row(
-              children: const [
-                Icon(Icons.star, color: _primary, size: 14),
-                SizedBox(width: 3),
+              children: [
+                Icon(Icons.star, color: c.primary, size: 14),
+                const SizedBox(width: 3),
                 Text(
                   '4.8',
                   style: TextStyle(
-                    color: _primary,
+                    color: c.primary,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
@@ -357,9 +341,8 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
   }
 
   // ── STATISTIQUES ──────────────────────────────────────────────────────────
-  Widget _buildStats() {
+  Widget _buildStats(AppColors c) {
     final statsAsync = ref.watch(orderStatsProvider);
-
     final totalOrders = statsAsync.whenOrNull(data: (s) => s.totalOrders) ?? 0;
     final totalSpent  = statsAsync.whenOrNull(data: (s) => s.totalSpent)  ?? 0.0;
     final isLoading   = statsAsync is AsyncLoading;
@@ -369,10 +352,10 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'STATISTIQUES',
             style: TextStyle(
-              color: _onSurfaceVariant,
+              color: c.onSurfaceVariant,
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.8,
@@ -381,16 +364,14 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildStatItem('12', 'COURSES'),
-              _buildVerticalDivider(),
-              _buildStatItem(
-                isLoading ? '—' : '$totalOrders',
-                'COMMANDES',
-              ),
-              _buildVerticalDivider(),
+              _buildStatItem('12', 'COURSES', c),
+              _buildVerticalDivider(c),
+              _buildStatItem(isLoading ? '—' : '$totalOrders', 'COMMANDES', c),
+              _buildVerticalDivider(c),
               _buildStatItem(
                 isLoading ? '—' : _formatNumber(totalSpent),
                 'DÉPENSES\n(FDJ)',
+                c,
               ),
             ],
           ),
@@ -411,14 +392,14 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
     }
   }
 
-  Widget _buildStatItem(String value, String label) {
+  Widget _buildStatItem(String value, String label, AppColors c) {
     return Expanded(
       child: Column(
         children: [
           Text(
             value,
-            style: const TextStyle(
-              color: _onSurface,
+            style: TextStyle(
+              color: c.onSurface,
               fontSize: 28,
               fontWeight: FontWeight.bold,
               letterSpacing: -1,
@@ -427,8 +408,9 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
-              color: _onSurfaceVariant,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: c.onSurfaceVariant,
               fontSize: 10,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.5,
@@ -439,31 +421,60 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
     );
   }
 
-  Widget _buildVerticalDivider() {
+  Widget _buildVerticalDivider(AppColors c) {
     return Container(
       width: 1,
       height: 40,
-      color: _outlineVariant.withValues(alpha: 0.3),
+      color: c.outlineVariant.withValues(alpha: 0.3),
     );
   }
 
   // ── ACTIONS RAPIDES ───────────────────────────────────────────────────────
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(AppColors c) {
     final actions = [
-      {'icon': Icons.history_rounded, 'label': 'Historique'},
-      {'icon': Icons.payment_rounded, 'label': 'Paiements'},
-      {'icon': Icons.account_balance_wallet_rounded, 'label': 'Portefeuille'},
+      {
+        'icon': Icons.history_rounded,
+        'label': 'Historique',
+        'onTap': () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
+        ),
+      },
+      {
+        'icon': Icons.payment_rounded,
+        'label': 'Paiements',
+        'onTap': () => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Paiements — À venir'),
+            backgroundColor: c.surfaceTop,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      },
+      {
+        'icon': Icons.account_balance_wallet_rounded,
+        'label': 'Portefeuille',
+        'onTap': () => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Portefeuille — À venir'),
+            backgroundColor: c.surfaceTop,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      },
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(20, 28, 20, 16),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
           child: Text(
             'Actions rapides',
             style: TextStyle(
-              color: _onSurface,
+              color: c.onSurface,
               fontSize: 20,
               fontWeight: FontWeight.bold,
               letterSpacing: -0.5,
@@ -476,36 +487,28 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
             children: actions.map((action) {
               return Expanded(
                 child: GestureDetector(
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${action['label']} — À venir'),
-                      backgroundColor: _surfaceTop,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
+                  onTap: action['onTap'] as VoidCallback,
                   child: Container(
                     margin: EdgeInsets.only(
                       right: action == actions.last ? 0 : 10,
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     decoration: BoxDecoration(
-                      color: _surface,
+                      color: c.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                          color: _outlineVariant.withValues(alpha: 0.12)),
+                          color: c.outlineVariant.withValues(alpha: 0.12)),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(action['icon'] as IconData,
-                            color: _primary, size: 26),
+                            color: c.primary, size: 26),
                         const SizedBox(height: 8),
                         Text(
                           action['label'] as String,
-                          style: const TextStyle(
-                            color: _onSurface,
+                          style: TextStyle(
+                            color: c.onSurface,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -523,14 +526,14 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
   }
 
   // ── FOOTER ────────────────────────────────────────────────────────────────
-  Widget _buildFooter() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 36),
+  Widget _buildFooter(AppColors c) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 36),
       child: Center(
         child: Text(
           'VELOX — SERVICE NATIONAL DJIBOUTIEN V1.0.0',
           style: TextStyle(
-            color: _onSurfaceVariant,
+            color: c.onSurfaceVariant,
             fontSize: 10,
             letterSpacing: 1.2,
             fontWeight: FontWeight.w500,
@@ -541,26 +544,25 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
   }
 
   // ── HOME PAGE ─────────────────────────────────────────────────────────────
-  Widget _buildHomePage(String firstName) {
+  Widget _buildHomePage(String firstName, AppColors c) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(firstName),
-          _buildTagline(),
-          _buildLoyaltyCard(),
-          // Services header
+          _buildHeader(firstName, c),
+          _buildTagline(c),
+          _buildLoyaltyCard(c),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 14),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Nos Services',
                   style: TextStyle(
-                    color: _onSurface,
+                    color: c.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
@@ -569,7 +571,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                 Text(
                   'Tout voir',
                   style: TextStyle(
-                    color: _primary,
+                    color: c.primary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -577,7 +579,6 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
               ],
             ),
           ),
-          // Service cards
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
@@ -587,44 +588,46 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                   subtitle: 'Déplacez-vous facilement en ville',
                   imageAsset: 'assets/vehicule/taxi-B.png',
                   onTap: _goToTaxi,
+                  c: c,
                 ),
                 _buildServiceCard(
                   title: 'Restaurants & Fast food',
                   subtitle: 'Toutes vos envies, livrées chez vous',
                   imageAsset: 'assets/images/fast-food.png',
                   onTap: _goToRestaurants,
+                  c: c,
                 ),
               ],
             ),
           ),
-          _buildStats(),
-          _buildQuickActions(),
-          _buildFooter(),
+          _buildStats(c),
+          _buildQuickActions(c),
+          _buildFooter(c),
         ],
       ),
     );
   }
 
   // ── BOTTOM NAV ────────────────────────────────────────────────────────────
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(AppColors c) {
     return Container(
       height: 72,
       decoration: BoxDecoration(
-        color: _surfaceLow,
+        color: c.surfaceLow,
         border: Border(
-          top: BorderSide(color: _outlineVariant.withValues(alpha: 0.15)),
+          top: BorderSide(color: c.outlineVariant.withValues(alpha: 0.15)),
         ),
       ),
       child: Row(
         children: [
-          _buildNavItem(0, Icons.home_rounded, 'Accueil'),
-          _buildNavItem(1, Icons.person_rounded, 'Profil'),
+          _buildNavItem(0, Icons.home_rounded, 'Accueil', c),
+          _buildNavItem(1, Icons.person_rounded, 'Profil', c),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label, AppColors c) {
     final isActive = _selectedIndex == index;
     return Expanded(
       child: GestureDetector(
@@ -639,13 +642,13 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
               height: 48,
               decoration: isActive
                   ? BoxDecoration(
-                      color: _primary,
+                      color: c.primary,
                       shape: BoxShape.circle,
                     )
                   : null,
               child: Icon(
                 icon,
-                color: isActive ? _onPrimary : _onSurfaceVariant,
+                color: isActive ? c.onPrimary : c.onSurfaceVariant,
                 size: 24,
               ),
             ),
@@ -658,38 +661,40 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
   // ── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    final c = isDark ? AppColors.dark : AppColors.light;
     final userState = ref.watch(userNotifierProvider);
 
     if (userState.isLoading) {
-      return const Scaffold(
-        backgroundColor: _bg,
+      return Scaffold(
+        backgroundColor: c.bg,
         body: Center(
-          child: CircularProgressIndicator(color: _primary, strokeWidth: 2),
+          child: CircularProgressIndicator(color: c.primary, strokeWidth: 2),
         ),
       );
     }
 
     if (!userState.isAuthenticated) {
       return Scaffold(
-        backgroundColor: _bg,
+        backgroundColor: c.bg,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.lock_outline, color: _primary, size: 60),
+              Icon(Icons.lock_outline, color: c.primary, size: 60),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Connexion requise',
                 style: TextStyle(
-                  color: _onSurface,
+                  color: c.onSurface,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Connectez-vous pour accéder aux services',
-                style: TextStyle(color: _onSurfaceVariant, fontSize: 14),
+                style: TextStyle(color: c.onSurfaceVariant, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -697,8 +702,8 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                 onPressed: () => Navigator.pushReplacement(context,
                     MaterialPageRoute(builder: (_) => const SignInScreen())),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  foregroundColor: _onPrimary,
+                  backgroundColor: c.primary,
+                  foregroundColor: c.onPrimary,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 40, vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -716,19 +721,19 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
     final firstName = userState.displayName.split(' ').first;
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: c.bg,
       body: SafeArea(
         child: PageView(
           controller: _pageController,
           onPageChanged: (i) => setState(() => _selectedIndex = i),
           children: [
-            _buildHomePage(firstName),
+            _buildHomePage(firstName, c),
             const ProfileScreen(),
           ],
         ),
       ),
       bottomNavigationBar: SafeArea(
-        child: _buildBottomNav(),
+        child: _buildBottomNav(c),
       ),
     );
   }

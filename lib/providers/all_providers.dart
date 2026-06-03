@@ -36,6 +36,15 @@ export 'address_notifier.dart';        // addressNotifierProvider
 // ── Stats commandes live ─────────────────────────────────────────
 export 'order_stats_provider.dart';    // orderStatsProvider
 
+// ── Historique commandes utilisateur ─────────────────────────────
+export 'user_orders_provider.dart';    // userOrdersProvider
+
+// ── Favoris restaurants ───────────────────────────────────────────
+export 'favorites_notifier.dart';      // favoritesNotifierProvider
+
+// ── Préférences notifications ─────────────────────────────────────
+export 'notifications_notifier.dart';  // notificationsNotifierProvider
+
 // ── Phase 6 — GPS Riverpod ───────────────────────────────────────
 export 'location_notifier.dart';
 // locationNotifierProvider

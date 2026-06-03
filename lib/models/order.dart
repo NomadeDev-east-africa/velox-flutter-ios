@@ -162,9 +162,9 @@ class Order {
       customerPhone: data['customerPhone'] ?? '',
       items: data['items'] is List
           ? (data['items'] as List<dynamic>)
-              .where((item) => item is Map)
+              .whereType<Map>()
               .map((item) =>
-                  OrderItem.fromMap(Map<String, dynamic>.from(item as Map)))
+                  OrderItem.fromMap(Map<String, dynamic>.from(item)))
               .toList()
           : [],
       deliveryFee: data['deliveryFee'] ?? 500,

@@ -172,7 +172,7 @@ service cloud.firestore {
           && resource.data.status in ['pending','confirmed']
           && request.resource.data.status == 'cancelled'
           && onlyFields([
-               'status','cancelledAt',
+               'status','cancelledBy','cancelledAt',
                'cancellationReason','updatedAt'
              ])
         )

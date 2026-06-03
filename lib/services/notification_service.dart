@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -146,11 +147,38 @@ class NotificationService {
 
   /// Gérer le tap sur une notification locale (flutter_local_notifications)
   void _onNotificationTap(NotificationResponse response) {
-    debugPrint(
-        '🔔 [NotificationService] Tap sur notification: ${response.payload}');
+    debugPrint('🔔 [NotificationService] Tap sur notification: ${response.payload}');
     final payload = response.payload;
-    if (payload != null && payload.isNotEmpty) {
-      _navigateToOrder(payload);
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      final type    = data['type']    as String?;
+      final orderId = data['orderId'] as String?;
+      final rideId  = data['rideId']  as String?;
+
+      switch (type) {
+        case 'order_update':
+        case 'order_ready_client':
+          if (orderId != null) _navigateToOrder(orderId);
+          break;
+        case 'driver_accepted':
+        case 'driver_arriving':
+        case 'driver_arrived':
+        case 'ride_started':
+        case 'ride_completed':
+        case 'ride_cancelled':
+        case 'no_driver_available':
+        case 'ride_accepted':
+        case 'ride_update':
+          if (rideId != null) _navigateToRide(rideId);
+          break;
+        default:
+          if (orderId != null) _navigateToOrder(orderId);
+      }
+    } catch (_) {
+      // Legacy payload (plain orderId string)
+      if (payload.isNotEmpty) _navigateToOrder(payload);
     }
   }
 
@@ -293,12 +321,18 @@ class NotificationService {
       iOS: iosDetails,
     );
 
+    final payload = jsonEncode({
+      'type':    message.data['type'],
+      'orderId': message.data['orderId'],
+      'rideId':  message.data['rideId'],
+    });
+
     await _localNotifications.show(
-      DateTime.now().millisecond,
+      DateTime.now().millisecondsSinceEpoch % 100000,
       message.notification?.title ?? 'Nouvelle notification',
       message.notification?.body ?? '',
       details,
-      payload: message.data['orderId'],
+      payload: payload,
     );
   }
 

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nomade_client/providers/all_providers.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 
 // Screens
 import 'edit_profile_screen.dart';
 import 'adresses/add_address_screen.dart';
 import 'adresses/my_addresses_screen.dart';
+import '../history/order_history_screen.dart';
+import '../food/favorites/favorite_restaurants_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -17,10 +20,12 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isUploading = false;
+  late AppColors _c;
 
   @override
   Widget build(BuildContext context) {
     final themeState = ref.watch(themeNotifierProvider);
+    _c = themeState.isDarkMode ? AppColors.dark : AppColors.light;
     final langState  = ref.watch(languageNotifierProvider);
     final userState  = ref.watch(userNotifierProvider);
 
@@ -124,37 +129,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _buildSection(
-                  themeState: themeState,
-                  title: 'Notifications',
-                  icon: Icons.notifications,
-                  children: [
-                    _buildSwitchTile(
-                      themeState: themeState,
-                      icon: Icons.notifications_active,
-                      title: 'Notifications push',
-                      subtitle: 'Recevoir les alertes',
-                      value: true,
-                      onChanged: (value) {},
-                    ),
-                    _buildSwitchTile(
-                      themeState: themeState,
-                      icon: Icons.shopping_bag,
-                      title: 'Suivi de commande',
-                      subtitle: 'Mises à jour en temps réel',
-                      value: true,
-                      onChanged: (value) {},
-                    ),
-                    _buildSwitchTile(
-                      themeState: themeState,
-                      icon: Icons.local_offer,
-                      title: 'Promotions',
-                      subtitle: 'Offres et réductions',
-                      value: false,
-                      onChanged: (value) {},
-                    ),
-                  ],
-                ),
+                _buildNotificationsSection(themeState),
                 const SizedBox(height: 16),
                 _buildSection(
                   themeState: themeState,
@@ -167,15 +142,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       title: 'Mes commandes',
                       subtitle: 'Historique complet',
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const OrderHistoryScreen(),
+                        ),
+                      ),
                     ),
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.favorite,
                       title: 'Restaurants favoris',
-                      subtitle: '5 restaurants',
+                      subtitle: '${ref.watch(favoritesNotifierProvider).length} restaurant(s)',
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FavoriteRestaurantsScreen(),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -238,12 +223,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       expandedHeight: 280,
       floating: false,
       pinned: true,
-      backgroundColor: const Color(0xFF0E0E0E),
+      backgroundColor: _c.bg,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF0E0E0E), Color(0xFF1A1919)],
+              colors: [_c.bg, _c.surfaceLow],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -260,7 +245,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFF9FFF88),
+                          color: _c.primary,
                           width: 3,
                         ),
                       ),
@@ -268,13 +253,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 50,
-                            backgroundColor: const Color(0xFF20201F),
+                            backgroundColor: _c.surfaceHigh,
                             backgroundImage: userState.displayPhotoUrl != null
                                 ? NetworkImage(userState.displayPhotoUrl!)
                                 : null,
                             child: userState.displayPhotoUrl == null
-                                ? const Icon(Icons.person, size: 50,
-                                    color: Color(0xFF9FFF88))
+                                ? Icon(Icons.person, size: 50, color: _c.primary)
                                 : null,
                           ),
                           if (_isUploading)
@@ -284,9 +268,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   shape: BoxShape.circle,
                                   color: Colors.black.withValues(alpha: 0.5),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: CircularProgressIndicator(
-                                    color: Color(0xFF9FFF88),
+                                    color: _c.primary,
                                     strokeWidth: 2,
                                   ),
                                 ),
@@ -303,20 +287,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF9FFF88),
+                            color: _c.primary,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF9FFF88).withValues(alpha: 0.3),
+                                color: _c.primary.withValues(alpha: 0.3),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.camera_alt,
                             size: 18,
-                            color: Color(0xFF026400),
+                            color: _c.onPrimary,
                           ),
                         ),
                       ),
@@ -326,19 +310,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 Text(
                   userState.displayName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: _c.onSurface,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   userState.email ?? '',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFFADAAAA),
+                    color: _c.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -362,7 +346,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFF9FFF88), size: 20),
+              Icon(icon, color: _c.primary, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -402,12 +386,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: (color ?? const Color(0xFF9FFF88)).withValues(alpha:0.1),
+          color: (color ?? _c.primary).withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
           icon,
-          color: color ?? const Color(0xFF9FFF88),
+          color: color ?? _c.primary,
           size: 22,
         ),
       ),
@@ -434,12 +418,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       secondary: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xFF9FFF88).withValues(alpha:0.1),
+          color: _c.primary.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
           themeState.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-          color: const Color(0xFF9FFF88),
+          color: _c.primary,
           size: 22,
         ),
       ),
@@ -456,7 +440,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         style: TextStyle(fontSize: 13, color: themeState.textSecondary),
       ),
       value: themeState.isDarkMode,
-      activeThumbColor: const Color(0xFF9FFF88),
+      activeThumbColor: _c.primary,
       onChanged: (value) => ref.read(themeNotifierProvider.notifier).toggleTheme(),
     );
   }
@@ -466,12 +450,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xFF9FFF88).withValues(alpha:0.1),
+          color: _c.primary.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.language,
-          color: Color(0xFF9FFF88),
+          color: _c.primary,
           size: 22,
         ),
       ),
@@ -500,10 +484,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       secondary: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xFF9FFF88).withValues(alpha:0.1),
+          color: _c.primary.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: const Color(0xFF9FFF88), size: 22),
+        child: Icon(icon, color: _c.primary, size: 22),
       ),
       title: Text(
         title,
@@ -518,16 +502,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         style: TextStyle(fontSize: 13, color: themeState.textSecondary),
       ),
       value: value,
-      activeThumbColor: const Color(0xFF9FFF88),
+      activeThumbColor: _c.primary,
       onChanged: onChanged,
+    );
+  }
+
+  Widget _buildNotificationsSection(ThemeState themeState) {
+    final notif = ref.watch(notificationsNotifierProvider);
+    final notifier = ref.read(notificationsNotifierProvider.notifier);
+    return _buildSection(
+      themeState: themeState,
+      title: 'Notifications',
+      icon: Icons.notifications,
+      children: [
+        _buildSwitchTile(
+          themeState: themeState,
+          icon: Icons.notifications_active,
+          title: 'Notifications push',
+          subtitle: 'Recevoir les alertes',
+          value: notif.push,
+          onChanged: notifier.setPush,
+        ),
+        _buildSwitchTile(
+          themeState: themeState,
+          icon: Icons.shopping_bag,
+          title: 'Suivi de commande',
+          subtitle: 'Mises à jour en temps réel',
+          value: notif.orders,
+          onChanged: notifier.setOrders,
+        ),
+        _buildSwitchTile(
+          themeState: themeState,
+          icon: Icons.local_offer,
+          title: 'Promotions',
+          subtitle: 'Offres et réductions',
+          value: notif.promos,
+          onChanged: notifier.setPromos,
+        ),
+      ],
     );
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
+    final c = _c;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1919),
+      backgroundColor: c.surfaceLow,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -540,17 +561,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Container(
                 width: 40, height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF484847),
+                  color: c.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Changer la photo',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: c.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
@@ -558,13 +579,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF9FFF88).withValues(alpha: 0.1),
+                    color: c.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.photo_camera, color: Color(0xFF9FFF88)),
+                  child: Icon(Icons.photo_camera, color: c.primary),
                 ),
-                title: const Text('Prendre une photo',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                title: Text('Prendre une photo',
+                    style: TextStyle(color: c.onSurface, fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(ctx);
                   final XFile? image = await picker.pickImage(
@@ -576,13 +597,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF9FFF88).withValues(alpha: 0.1),
+                    color: c.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.photo_library, color: Color(0xFF9FFF88)),
+                  child: Icon(Icons.photo_library, color: c.primary),
                 ),
-                title: const Text('Choisir depuis la galerie',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                title: Text('Choisir depuis la galerie',
+                    style: TextStyle(color: c.onSurface, fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(ctx);
                   final XFile? image = await picker.pickImage(
@@ -652,8 +673,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF9FFF88).withValues(alpha: 0.15)
-              : Colors.grey.withValues(alpha: 0.08),
+              ? _c.primary.withValues(alpha: 0.15)
+              : _c.surface,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -661,13 +682,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: isSelected ? const Color(0xFF9FFF88) : Colors.grey[600],
+            color: isSelected ? _c.primary : _c.onSurfaceVariant,
           ),
         ),
       ),
       title: Text(name),
       trailing: isSelected
-          ? const Icon(Icons.check_circle, color: Color(0xFF9FFF88))
+          ? Icon(Icons.check_circle, color: _c.primary)
           : null,
       onTap: () {
         ref.read(languageNotifierProvider.notifier).setLanguage(code);
@@ -708,31 +729,97 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showDeleteAccountDialog(ThemeState themeState) {
+    final confirmController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: themeState.cardColor,
-        title: Text('Supprimer le compte', style: TextStyle(color: themeState.textPrimary)),
-        content: Text(
-          'Cette action est irréversible. Toutes vos données seront supprimées définitivement.',
-          style: TextStyle(color: themeState.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocalState) => AlertDialog(
+          backgroundColor: themeState.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Color(0xFFCE1126)),
+              const SizedBox(width: 8),
+              Text(
+                'Supprimer le compte',
+                style: TextStyle(color: themeState.textPrimary, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Show confirmation dialog + delete account
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFCE1126),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Cette action est irréversible. Toutes vos données (commandes, adresses, profil) seront supprimées définitivement.',
+                style: TextStyle(color: themeState.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Tapez SUPPRIMER pour confirmer :',
+                style: TextStyle(
+                  color: themeState.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmController,
+                onChanged: (_) => setLocalState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'SUPPRIMER',
+                  hintStyle: TextStyle(color: _c.onSurfaceVariant),
+                  filled: true,
+                  fillColor: _c.surfaceHigh,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                style: TextStyle(color: _c.onSurface),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                confirmController.dispose();
+                Navigator.pop(ctx);
+              },
+              child: Text('Annuler', style: TextStyle(color: _c.onSurfaceVariant)),
             ),
-            child: const Text('Supprimer'),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: confirmController.text == 'SUPPRIMER'
+                  ? () async {
+                      final navigator = Navigator.of(context);
+                      Navigator.pop(ctx);
+                      try {
+                        await ref
+                            .read(userNotifierProvider.notifier)
+                            .deleteAccount();
+                        if (!mounted) return;
+                        navigator.pushNamedAndRemoveUntil('/', (_) => false);
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Erreur : $e'),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFCE1126),
+                disabledBackgroundColor: _c.surfaceHigh,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }

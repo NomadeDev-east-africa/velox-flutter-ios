@@ -4,16 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nomade_client/providers/all_providers.dart';
-
-// Kinetic Monolith design system
-const _bg              = Color(0xFF0E0E0E);
-const _surface         = Color(0xFF1A1919);
-const _surfaceHigh     = Color(0xFF20201F);
-const _primary         = Color(0xFF9FFF88);
-const _onPrimary       = Color(0xFF026400);
-const _onSurface       = Color(0xFFFFFFFF);
-const _onSurfaceVariant= Color(0xFFADAAAA);
-const _outlineVariant  = Color(0xFF484847);
+import 'package:nomade_client/theme/app_colors.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -31,6 +22,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   DateTime? _birthDate;
   bool _isSaving        = false;
   bool _isUploadingPhoto= false;
+  late AppColors _c;
+  late bool _isDark;
 
   @override
   void initState() {
@@ -45,18 +38,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    _c = _isDark ? AppColors.dark : AppColors.light;
     final userState = ref.watch(userNotifierProvider);
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _c.bg,
       appBar: AppBar(
-        backgroundColor: _bg,
-        foregroundColor: _onSurface,
+        backgroundColor: _c.bg,
+        foregroundColor: _c.onSurface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Modifier mon profil',
           style: TextStyle(
-            color: _onSurface,
+            color: _c.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -65,22 +60,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: _surfaceHigh,
+              color: _c.surfaceHigh,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.arrow_back_ios_new, color: _onSurface, size: 15),
+            child: Icon(Icons.arrow_back_ios_new, color: _c.onSurface, size: 15),
           ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           if (_isSaving)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: SizedBox(
                   width: 22, height: 22,
                   child: CircularProgressIndicator(
-                    color: _primary, strokeWidth: 2,
+                    color: _c.primary, strokeWidth: 2,
                   ),
                 ),
               ),
@@ -91,16 +86,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: TextButton(
                 onPressed: _saveProfile,
                 style: TextButton.styleFrom(
-                  backgroundColor: _primary.withValues(alpha: 0.12),
+                  backgroundColor: _c.primary.withValues(alpha: 0.12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 ),
-                child: const Text(
+                child: Text(
                   'Sauvegarder',
                   style: TextStyle(
-                    color: _primary,
+                    color: _c.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -124,10 +119,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: _primary, width: 2.5),
+                        border: Border.all(color: _c.primary, width: 2.5),
                         boxShadow: [
                           BoxShadow(
-                            color: _primary.withValues(alpha: 0.15),
+                            color: _c.primary.withValues(alpha: 0.15),
                             blurRadius: 20,
                             spreadRadius: 2,
                           ),
@@ -137,12 +132,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 56,
-                            backgroundColor: _surfaceHigh,
+                            backgroundColor: _c.surfaceHigh,
                             backgroundImage: userState.displayPhotoUrl != null
                                 ? NetworkImage(userState.displayPhotoUrl!)
                                 : null,
                             child: userState.displayPhotoUrl == null
-                                ? const Icon(Icons.person, size: 56, color: _primary)
+                                ? Icon(Icons.person, size: 56, color: _c.primary)
                                 : null,
                           ),
                           if (_isUploadingPhoto)
@@ -152,9 +147,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   shape: BoxShape.circle,
                                   color: Colors.black.withValues(alpha: 0.55),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: CircularProgressIndicator(
-                                    color: _primary, strokeWidth: 2,
+                                    color: _c.primary, strokeWidth: 2,
                                   ),
                                 ),
                               ),
@@ -168,17 +163,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(9),
                         decoration: BoxDecoration(
-                          color: _primary,
+                          color: _c.primary,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: _primary.withValues(alpha: 0.3),
+                              color: _c.primary.withValues(alpha: 0.3),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.camera_alt, size: 17, color: _onPrimary),
+                        child: Icon(Icons.camera_alt, size: 17, color: _c.onPrimary),
                       ),
                     ),
                   ],
@@ -186,10 +181,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Center(
+            Center(
               child: Text(
                 'Appuyer pour changer la photo',
-                style: TextStyle(fontSize: 13, color: _onSurfaceVariant),
+                style: TextStyle(fontSize: 13, color: _c.onSurfaceVariant),
               ),
             ),
 
@@ -245,18 +240,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: _primary.withValues(alpha: 0.06),
+                color: _c.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _primary.withValues(alpha: 0.18)),
+                border: Border.all(color: _c.primary.withValues(alpha: 0.18)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: _primary, size: 18),
-                  SizedBox(width: 12),
+                  Icon(Icons.info_outline, color: _c.primary, size: 18),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Ces informations permettent une meilleure expérience et personnalisation de vos commandes.',
-                      style: TextStyle(fontSize: 13, color: _onSurfaceVariant),
+                      style: TextStyle(fontSize: 13, color: _c.onSurfaceVariant),
                     ),
                   ),
                 ],
@@ -271,26 +266,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  disabledBackgroundColor: _primary.withValues(alpha: 0.4),
+                  backgroundColor: _c.primary,
+                  disabledBackgroundColor: _c.primary.withValues(alpha: 0.4),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 0,
                 ),
                 child: _isSaving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 22, height: 22,
                         child: CircularProgressIndicator(
-                          color: _onPrimary, strokeWidth: 2,
+                          color: _c.onPrimary, strokeWidth: 2,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         'Sauvegarder les modifications',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: _onPrimary,
+                          color: _c.onPrimary,
                         ),
                       ),
               ),
@@ -318,35 +313,35 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: _onSurfaceVariant,
+            color: _c.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          style: const TextStyle(color: _onSurface, fontSize: 15),
+          style: TextStyle(color: _c.onSurface, fontSize: 15),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: _outlineVariant, fontSize: 14),
-            prefixIcon: Icon(icon, color: _primary, size: 20),
+            hintStyle: TextStyle(color: _c.outlineVariant, fontSize: 14),
+            prefixIcon: Icon(icon, color: _c.primary, size: 20),
             filled: true,
-            fillColor: _surface,
+            fillColor: _c.surfaceLow,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: _outlineVariant),
+              borderSide: BorderSide(color: _c.outlineVariant),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: _outlineVariant),
+              borderSide: BorderSide(color: _c.outlineVariant),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: _primary, width: 1.5),
+              borderSide: BorderSide(color: _c.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -374,28 +369,28 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: _onSurfaceVariant,
+            color: _c.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           decoration: BoxDecoration(
-            color: _surfaceHigh,
+            color: _c.surfaceHigh,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _outlineVariant.withValues(alpha: 0.5)),
+            border: Border.all(color: _c.outlineVariant.withValues(alpha: 0.5)),
           ),
           child: Row(
             children: [
-              Icon(icon, color: _onSurfaceVariant, size: 20),
+              Icon(icon, color: _c.onSurfaceVariant, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   value,
-                  style: const TextStyle(fontSize: 15, color: _onSurfaceVariant),
+                  style: TextStyle(fontSize: 15, color: _c.onSurfaceVariant),
                 ),
               ),
               if (badge != null)
@@ -425,12 +420,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Date de naissance',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: _onSurfaceVariant,
+            color: _c.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -440,13 +435,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: _surface,
+              color: _c.surfaceLow,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _outlineVariant),
+              border: Border.all(color: _c.outlineVariant),
             ),
             child: Row(
               children: [
-                const Icon(Icons.cake_outlined, color: _primary, size: 20),
+                Icon(Icons.cake_outlined, color: _c.primary, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -455,11 +450,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         : 'Sélectionner une date',
                     style: TextStyle(
                       fontSize: 15,
-                      color: _birthDate != null ? _onSurface : _outlineVariant,
+                      color: _birthDate != null ? _c.onSurface : _c.outlineVariant,
                     ),
                   ),
                 ),
-                const Icon(Icons.calendar_today_outlined, color: _onSurfaceVariant, size: 18),
+                Icon(Icons.calendar_today_outlined, color: _c.onSurfaceVariant, size: 18),
               ],
             ),
           ),
@@ -478,12 +473,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       lastDate: DateTime.now(),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.dark(
-            primary: _primary,
-            onPrimary: _onPrimary,
-            surface: _surface,
-            onSurface: _onSurface,
-          ),
+          colorScheme: _isDark
+              ? ColorScheme.dark(primary: _c.primary, onPrimary: _c.onPrimary, surface: _c.surfaceLow, onSurface: _c.onSurface)
+              : ColorScheme.fromSeed(seedColor: _c.primary),
         ),
         child: child!,
       ),
@@ -495,9 +487,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _pickAndUploadPhoto() async {
     final picker = ImagePicker();
+    final c = _c;
     showModalBottomSheet(
       context: context,
-      backgroundColor: _surface,
+      backgroundColor: c.surfaceLow,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -510,17 +503,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               Container(
                 width: 40, height: 4,
                 decoration: BoxDecoration(
-                  color: _outlineVariant,
+                  color: c.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Changer la photo',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
-                  color: _onSurface,
+                  color: c.onSurface,
                 ),
               ),
               const SizedBox(height: 16),
@@ -557,14 +550,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: _primary.withValues(alpha: 0.1),
+          color: _c.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: _primary),
+        child: Icon(icon, color: _c.primary),
       ),
       title: Text(
         label,
-        style: const TextStyle(color: _onSurface, fontWeight: FontWeight.w600),
+        style: TextStyle(color: _c.onSurface, fontWeight: FontWeight.w600),
       ),
       onTap: () async {
         Navigator.pop(ctx);

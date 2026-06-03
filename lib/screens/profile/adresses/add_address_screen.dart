@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:nomade_client/providers/all_providers.dart';
 import 'package:nomade_client/services/location_service.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 
 class AddAddressScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? existingAddress;
@@ -38,21 +39,21 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   String _selectedType = 'home';
   final ScrollController _scrollController = ScrollController();
 
+  late AppColors _c;
+  late bool _isDark;
+
   @override
   void initState() {
     super.initState();
     debugPrint('🚀 AddAddressScreen - initState()');
 
-    // Initialiser avec l'adresse existante si elle existe
     if (widget.existingAddress != null) {
       _initializeWithExistingLocation();
     } else {
-      // Initialiser avec la position actuelle
       _initializePosition();
     }
   }
 
-  // Initialiser avec l'adresse existante
   void _initializeWithExistingLocation() {
     if (widget.existingAddress != null) {
       _nameController.text = widget.existingAddress!['name'];
@@ -68,12 +69,10 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
         _isInitialized = true;
       });
 
-      // Déplacer la carte après un délai
       _moveMapToLocation(_selectedLocation!, 16.0);
     }
   }
 
-  // Initialiser avec la position actuelle
   Future<void> _initializePosition() async {
     setState(() {
       _isLoadingInitialLocation = true;
@@ -96,18 +95,15 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
         _isLoadingInitialLocation = false;
       });
 
-      // Déplacer la carte après un délai
       _moveMapToLocation(position, 16.0);
 
       debugPrint('✅ Position initialisée: $position');
 
-      // Charger l'adresse pour cette position
       _loadAddressForPosition(position);
 
     } catch (e) {
       debugPrint('❌ Erreur initialisation position: $e');
 
-      // Fallback sur position par défaut
       const defaultPosition = LatLng(11.5880, 43.1450);
       setState(() {
         _selectedLocation = defaultPosition;
@@ -115,12 +111,10 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
         _isLoadingInitialLocation = false;
       });
 
-      // Déplacer la carte vers la position par défaut
       _moveMapToLocation(defaultPosition, 12.0);
     }
   }
 
-  // Déplacer la carte vers une position
   void _moveMapToLocation(LatLng position, double zoom) {
     _mapMoveTimer?.cancel();
     _mapMoveTimer = Timer(const Duration(milliseconds: 100), () {
@@ -135,7 +129,6 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     });
   }
 
-  // Charger l'adresse pour une position
   Future<void> _loadAddressForPosition(LatLng position) async {
     if (_isLoadingAddress) return;
 
@@ -144,7 +137,6 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     try {
       final addr = await ref.read(locationNotifierProvider.notifier).getAddressForPosition(position);
 
-      // Mettre à jour le champ d'adresse
       if (mounted && addr != null && _addressController.text.isEmpty) {
         _addressController.text = addr;
       }
@@ -160,7 +152,6 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     }
   }
 
-  // Rechercher des lieux avec debouncing
   void _searchPlaces(String query) {
     _debounceTimer?.cancel();
 
@@ -209,7 +200,6 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     });
   }
 
-  // Sélectionner un résultat de recherche
   void _selectSearchResult(PlaceResult place) {
     debugPrint('✅ Sélection adresse: ${place.name}');
 
@@ -220,19 +210,15 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
       _searchController.text = place.name;
     });
 
-    // Remplir automatiquement le champ d'adresse
     _addressController.text = place.name;
 
-    // Déplacer la carte
     _moveMapToLocation(position, 16.0);
 
-    // Charger l'adresse
     _loadAddressForPosition(position);
 
     FocusScope.of(context).unfocus();
   }
 
-  // Sélecteur de type d'adresse
   Widget _buildTypeSelector() {
     final types = [
       {'value': 'home', 'label': 'Maison', 'icon': Icons.home},
@@ -253,11 +239,11 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF9FFF88).withValues(alpha: 0.12)
-                      : const Color(0xFF1A1919),
+                      ? _c.primary.withValues(alpha: 0.12)
+                      : _c.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFF9FFF88) : const Color(0xFF484847),
+                    color: isSelected ? _c.primary : _c.outlineVariant,
                     width: isSelected ? 2 : 1,
                   ),
                 ),
@@ -265,7 +251,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                   children: [
                     Icon(
                       type['icon'] as IconData,
-                      color: isSelected ? const Color(0xFF9FFF88) : const Color(0xFFADAAAA),
+                      color: isSelected ? _c.primary : _c.onSurfaceVariant,
                       size: 28,
                     ),
                     const SizedBox(height: 8),
@@ -274,7 +260,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? const Color(0xFF9FFF88) : const Color(0xFFADAAAA),
+                        color: isSelected ? _c.primary : _c.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -287,7 +273,6 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     );
   }
 
-  // Sauvegarder l'adresse
   void _saveAddress() {
     debugPrint('💾 Sauvegarder l\'adresse');
 
@@ -337,6 +322,9 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    _c = _isDark ? AppColors.dark : AppColors.light;
+
     final locationState    = ref.watch(locationNotifierProvider);
     final isLoadingAddress = locationState.isLoading;
 
@@ -349,20 +337,20 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
 
     if (_isLoadingInitialLocation) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0E0E0E),
+        backgroundColor: _c.bg,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircularProgressIndicator(color: Color(0xFF9FFF88)),
+              CircularProgressIndicator(color: _c.primary),
               const SizedBox(height: 16),
               Text(
                 widget.existingAddress != null
                     ? 'Chargement de l\'adresse existante...'
                     : 'Obtention de votre position...',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
-                  color: Color(0xFF9FFF88),
+                  color: _c.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -373,20 +361,20 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0E0E0E),
+      backgroundColor: _c.bg,
       appBar: AppBar(
         title: Text(
           widget.existingAddress != null ? 'Modifier l\'adresse' : 'Ajouter une adresse',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: _c.onSurface, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF0E0E0E),
-        foregroundColor: Colors.white,
+        backgroundColor: _c.bg,
+        foregroundColor: _c.onSurface,
         elevation: 0,
         actions: [
           IconButton(
             icon: Icon(
               _isDarkMap ? Icons.light_mode : Icons.dark_mode,
-              color: const Color(0xFF9FFF88),
+              color: _c.primary,
             ),
             onPressed: () {
               setState(() => _isDarkMap = !_isDarkMap);
@@ -396,7 +384,6 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
       ),
       body: Column(
         children: [
-          // Carte en haut (hauteur fixe)
           Expanded(
             flex: 2,
             child: Stack(
@@ -422,7 +409,6 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
 
                         ref.read(locationNotifierProvider.notifier).getAddressForPosition(center);
 
-                        // Recharger l'adresse
                         _loadAddressForPosition(center);
                       }
                     },
@@ -440,11 +426,11 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                           height: 70,
                           child: Icon(
                             Icons.location_pin,
-                            color: const Color(0xFF9FFF88),
+                            color: _c.primary,
                             size: 50,
                             shadows: [
                               Shadow(
-                                color: Colors.black.withValues(alpha:0.3),
+                                color: Colors.black.withValues(alpha: 0.3),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -463,11 +449,11 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                   right: 16,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _c.surfaceLow,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha:0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -476,14 +462,14 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                     child: TextField(
                       controller: _searchController,
                       onChanged: _searchPlaces,
-                      style: const TextStyle(fontSize: 17),
+                      style: TextStyle(fontSize: 17, color: _c.onSurface),
                       decoration: InputDecoration(
                         hintText: 'Rechercher une adresse...',
-                        hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 17),
-                        prefixIcon: const Icon(Icons.search, color: Color(0xFF9FFF88), size: 26),
+                        hintStyle: TextStyle(color: _c.onSurfaceVariant, fontSize: 17),
+                        prefixIcon: Icon(Icons.search, color: _c.primary, size: 26),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                          icon: const Icon(Icons.clear, size: 20),
+                          icon: Icon(Icons.clear, size: 20, color: _c.onSurfaceVariant),
                           onPressed: () {
                             setState(() {
                               _searchController.clear();
@@ -510,7 +496,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                     bottom: 16,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: _c.surfaceLow,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: const [
                           BoxShadow(
@@ -532,7 +518,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.grey.shade300,
+                                    color: _c.onSurface,
                                   ),
                                 ),
                                 const Spacer(),
@@ -540,7 +526,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                   '${_searchResults.length} trouvé(s)',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey.shade600,
+                                    color: _c.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -553,11 +539,11 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const CircularProgressIndicator(color: Color(0xFF9FFF88)),
+                                  CircularProgressIndicator(color: _c.primary),
                                   const SizedBox(height: 16),
                                   Text(
                                     'Recherche en cours...',
-                                    style: TextStyle(color: Colors.grey.shade600),
+                                    style: TextStyle(color: _c.onSurfaceVariant),
                                   ),
                                 ],
                               ),
@@ -570,14 +556,14 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                   Icon(
                                     Icons.location_off,
                                     size: 60,
-                                    color: Colors.grey.shade300,
+                                    color: _c.onSurfaceVariant,
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
                                     'Aucun résultat trouvé',
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: Colors.grey.shade600,
+                                      color: _c.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
@@ -585,7 +571,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                     'Essayez avec d\'autres termes',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.grey.shade500,
+                                      color: _c.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -594,7 +580,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                 : ListView.separated(
                               padding: const EdgeInsets.all(16),
                               itemCount: _searchResults.length,
-                              separatorBuilder: (_, _) => const Divider(height: 16),
+                              separatorBuilder: (context, index) => const Divider(height: 16),
                               itemBuilder: (context, index) {
                                 final place = _searchResults[index];
                                 return ListTile(
@@ -602,20 +588,21 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                     width: 48,
                                     height: 48,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF9FFF88).withValues(alpha:0.1),
+                                      color: _c.primary.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.location_on,
-                                      color: Color(0xFF9FFF88),
+                                      color: _c.primary,
                                       size: 26,
                                     ),
                                   ),
                                   title: Text(
                                     place.name,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
+                                      color: _c.onSurface,
                                     ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
@@ -624,7 +611,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                     '${place.latitude.toStringAsFixed(4)}, ${place.longitude.toStringAsFixed(4)}',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      color: _c.onSurfaceVariant,
                                     ),
                                   ),
                                   onTap: () => _selectSearchResult(place),
@@ -644,8 +631,8 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                   right: 16,
                   child: FloatingActionButton.small(
                     onPressed: _initializePosition,
-                    backgroundColor: Colors.white,
-                    child: const Icon(Icons.my_location, color: Color(0xFF9FFF88)),
+                    backgroundColor: _c.surfaceLow,
+                    child: Icon(Icons.my_location, color: _c.primary),
                   ),
                 ),
 
@@ -659,13 +646,13 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha:0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const SizedBox(
+                            SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
@@ -673,8 +660,8 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                 color: Colors.white,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            const Text(
+                            SizedBox(width: 8),
+                            Text(
                               'Chargement de l\'adresse...',
                               style: TextStyle(
                                 color: Colors.white,
@@ -697,10 +684,10 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
               controller: _scrollController,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF131313),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                  boxShadow: [
+                decoration: BoxDecoration(
+                  color: _c.surfaceLow,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black26,
                       blurRadius: 20,
@@ -721,12 +708,12 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF9FFF88).withValues(alpha:0.1),
+                              color: _c.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.location_pin,
-                              color: Color(0xFF9FFF88),
+                              color: _c.primary,
                               size: 26,
                             ),
                           ),
@@ -738,27 +725,27 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                 Text(
                                   'Adresse sélectionnée',
                                   style: TextStyle(
-                                    color: Colors.grey.shade400,
+                                    color: _c.onSurfaceVariant,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
                                 isLoadingAddress
-                                    ? const Column(
+                                    ? Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    SizedBox(height: 8),
+                                    const SizedBox(height: 8),
                                     LinearProgressIndicator(
-                                      color: Color(0xFF9FFF88),
+                                      color: _c.primary,
                                       minHeight: 2,
                                     ),
-                                    SizedBox(height: 4),
+                                    const SizedBox(height: 4),
                                     Text(
                                       'Chargement...',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey,
+                                        color: _c.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -769,8 +756,8 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     color: displayAddress == null
-                                        ? Colors.grey.shade500
-                                        : Colors.white,
+                                        ? _c.onSurfaceVariant
+                                        : _c.onSurface,
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -784,12 +771,12 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                       const SizedBox(height: 24),
 
                       // Type d'adresse
-                      const Text(
+                      Text(
                         'Type d\'adresse',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: _c.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -798,36 +785,36 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                       const SizedBox(height: 24),
 
                       // Nom de l'adresse
-                      const Text(
+                      Text(
                         'Nom de l\'adresse',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: _c.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _nameController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: _c.onSurface),
                         decoration: InputDecoration(
                           hintText: 'Ex: Maison, Bureau, Chez Maman...',
-                          hintStyle: TextStyle(color: Colors.grey.shade600),
-                          prefixIcon: const Icon(Icons.label, color: Color(0xFF9FFF88)),
+                          hintStyle: TextStyle(color: _c.onSurfaceVariant),
+                          prefixIcon: Icon(Icons.label, color: _c.primary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF484847)),
+                            borderSide: BorderSide(color: _c.outlineVariant),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF484847)),
+                            borderSide: BorderSide(color: _c.outlineVariant),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF9FFF88), width: 1.5),
+                            borderSide: BorderSide(color: _c.primary, width: 1.5),
                           ),
                           filled: true,
-                          fillColor: const Color(0xFF1A1919),
+                          fillColor: _c.surface,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -840,36 +827,36 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                       const SizedBox(height: 24),
 
                       // Adresse
-                      const Text(
+                      Text(
                         'Adresse',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: _c.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _addressController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: _c.onSurface),
                         decoration: InputDecoration(
                           hintText: 'L\'adresse se remplit automatiquement depuis la carte',
-                          hintStyle: TextStyle(color: Colors.grey.shade600),
-                          prefixIcon: const Icon(Icons.location_on, color: Color(0xFF9FFF88)),
+                          hintStyle: TextStyle(color: _c.onSurfaceVariant),
+                          prefixIcon: Icon(Icons.location_on, color: _c.primary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF484847)),
+                            borderSide: BorderSide(color: _c.outlineVariant),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF484847)),
+                            borderSide: BorderSide(color: _c.outlineVariant),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF9FFF88), width: 1.5),
+                            borderSide: BorderSide(color: _c.primary, width: 1.5),
                           ),
                           filled: true,
-                          fillColor: const Color(0xFF1A1919),
+                          fillColor: _c.surface,
                         ),
                         maxLines: 2,
                         validator: (value) {
@@ -883,36 +870,36 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                       const SizedBox(height: 24),
 
                       // Détails supplémentaires
-                      const Text(
+                      Text(
                         'Détails supplémentaires (optionnel)',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: _c.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _detailsController,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: _c.onSurface),
                         decoration: InputDecoration(
                           hintText: 'Étage, Bâtiment, Instructions...',
-                          hintStyle: TextStyle(color: Colors.grey.shade600),
-                          prefixIcon: const Icon(Icons.info_outline, color: Color(0xFF9FFF88)),
+                          hintStyle: TextStyle(color: _c.onSurfaceVariant),
+                          prefixIcon: Icon(Icons.info_outline, color: _c.primary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF484847)),
+                            borderSide: BorderSide(color: _c.outlineVariant),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF484847)),
+                            borderSide: BorderSide(color: _c.outlineVariant),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF9FFF88), width: 1.5),
+                            borderSide: BorderSide(color: _c.primary, width: 1.5),
                           ),
                           filled: true,
-                          fillColor: const Color(0xFF1A1919),
+                          fillColor: _c.surface,
                         ),
                         maxLines: 3,
                       ),
@@ -928,7 +915,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                               Icon(
                                 Icons.info_outline,
                                 size: 16,
-                                color: Colors.grey.shade500,
+                                color: _c.onSurfaceVariant,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -936,7 +923,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                                   'Déplacez la carte pour ajuster l\'adresse exacte',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.grey.shade500,
+                                    color: _c.onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -950,7 +937,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                         child: ElevatedButton(
                           onPressed: _saveAddress,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF9FFF88),
+                            backgroundColor: _c.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -960,10 +947,10 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                             widget.existingAddress != null
                                 ? 'Enregistrer les modifications'
                                 : 'Ajouter l\'adresse',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF026400),
+                              color: _c.onPrimary,
                             ),
                           ),
                         ),

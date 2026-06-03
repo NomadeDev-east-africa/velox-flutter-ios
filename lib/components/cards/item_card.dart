@@ -54,12 +54,12 @@ class ItemCard extends StatelessWidget {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              placeholder: (_, __) => Container(
+                              placeholder: (_, _) => Container(
                                 color: Colors.grey[300],
                                 child: const Center(
                                     child: CircularProgressIndicator()),
                               ),
-                              errorWidget: (_, __, ___) => Container(
+                              errorWidget: (_, _, _) => Container(
                                 color: Colors.grey[300],
                                 child:
                                     const Icon(Icons.fastfood, size: 40),

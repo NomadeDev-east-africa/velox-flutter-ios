@@ -323,9 +323,16 @@ class Ride {
     }
     switch (status) {
       case 'requested':
+      // Variantes de compatibilité Cloud Functions (PENDING_STATUSES)
+      case 'pending':
+      case 'waiting':
+      case 'new':
+      case 'created':
         return RideStatus.requested;
       case 'accepted':
         return RideStatus.accepted;
+      case 'arriving':
+        return RideStatus.arriving;
       case 'arrived':
         return RideStatus.arrived;
       case 'started':
@@ -334,14 +341,12 @@ class Ride {
         return RideStatus.completed;
       case 'cancelled':
         return RideStatus.cancelled;
-      case 'arriving':
-        return RideStatus.arriving;
       case 'no_driver_available':
       case 'noDriverAvailable':
         return RideStatus.noDriverAvailable;
       default:
         throw FormatException(
-          'claudeStatus inconnu: "$status". '
+          'Statut inconnu: "$status". '
           'Valides: requested, accepted, arriving, arrived, '
           'started, completed, cancelled, noDriverAvailable',
         );

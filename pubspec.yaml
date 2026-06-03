@@ -1,8 +1,6 @@
 name: nomade_client
-description: "A new Flutter project."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+description: "Velox — Taxi et livraison de repas à Djibouti. Réservez un taxi ou commandez à manger en quelques secondes."
+publish_to: 'none'
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -76,7 +74,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo_velox.webp"
+  image_path: "assets/images/logo-velox.png"
   min_sdk_android: 21
   adaptive_icon_background: "#0E0E0E"
   adaptive_icon_foreground: "assets/images/logo_velox.webp"
@@ -101,6 +99,7 @@ flutter:
     - assets/Illustrations/
     - assets/icons/
     - assets/vehicule/
+    - assets/google_fonts/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -1,35 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nomade_client/providers/all_providers.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 import 'add_address_screen.dart';
-
-// Kinetic Monolith design system
-const _bg              = Color(0xFF0E0E0E);
-const _surface         = Color(0xFF1A1919);
-const _surfaceHigh     = Color(0xFF20201F);
-const _primary         = Color(0xFF9FFF88);
-const _onPrimary       = Color(0xFF026400);
-const _onSurface       = Color(0xFFFFFFFF);
-const _onSurfaceVariant= Color(0xFFADAAAA);
-const _outlineVariant  = Color(0xFF484847);
 
 class MyAddressesScreen extends ConsumerWidget {
   const MyAddressesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    final c = isDark ? AppColors.dark : AppColors.light;
     final addressState = ref.watch(addressNotifierProvider);
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: c.bg,
       appBar: AppBar(
-        backgroundColor: _bg,
-        foregroundColor: _onSurface,
+        backgroundColor: c.bg,
+        foregroundColor: c.onSurface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Mes adresses',
           style: TextStyle(
-            color: _onSurface,
+            color: c.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
@@ -38,20 +31,18 @@ class MyAddressesScreen extends ConsumerWidget {
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: _surfaceHigh,
+              color: c.surfaceHigh,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.arrow_back_ios_new, color: _onSurface, size: 15),
+            child: Icon(Icons.arrow_back_ios_new, color: c.onSurface, size: 15),
           ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: addressState.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: _primary),
-            )
+          ? Center(child: CircularProgressIndicator(color: c.primary))
           : addressState.addresses.isEmpty
-              ? _buildEmptyState()
+              ? _buildEmptyState(c)
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                   itemCount: addressState.addresses.length,
@@ -59,12 +50,13 @@ class MyAddressesScreen extends ConsumerWidget {
                     context,
                     ref,
                     addressState.addresses[index],
+                    c,
                   ),
                 ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _navigateToAddAddress(context, ref),
-        backgroundColor: _primary,
-        foregroundColor: _onPrimary,
+        backgroundColor: c.primary,
+        foregroundColor: c.onPrimary,
         icon: const Icon(Icons.add_location_alt),
         label: const Text(
           'Ajouter',
@@ -101,7 +93,7 @@ class MyAddressesScreen extends ConsumerWidget {
 
   // ── Empty state ───────────────────────────────────────────────
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppColors c) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -109,25 +101,25 @@ class MyAddressesScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: _primary.withValues(alpha: 0.08),
+              color: c.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.location_off, size: 72, color: _primary),
+            child: Icon(Icons.location_off, size: 72, color: c.primary),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Aucune adresse enregistrée',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: _onSurface,
+              color: c.onSurface,
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Appuyez sur "Ajouter" pour enregistrer\nvotre première adresse',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: _onSurfaceVariant),
+            style: TextStyle(fontSize: 14, color: c.onSurfaceVariant),
           ),
         ],
       ),
@@ -140,14 +132,15 @@ class MyAddressesScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     dynamic address,
+    AppColors c,
   ) {
-    final typeColor = _typeColor(address.type);
+    final typeColor = _typeColor(address.type, c);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _outlineVariant.withValues(alpha: 0.4)),
+        border: Border.all(color: c.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -170,10 +163,10 @@ class MyAddressesScreen extends ConsumerWidget {
                     children: [
                       Text(
                         address.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
-                          color: _onSurface,
+                          color: c.onSurface,
                         ),
                       ),
                       if (address.isDefault) ...[
@@ -183,14 +176,14 @@ class MyAddressesScreen extends ConsumerWidget {
                             horizontal: 8, vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: _primary.withValues(alpha: 0.12),
+                            color: c.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Par défaut',
                             style: TextStyle(
                               fontSize: 11,
-                              color: _primary,
+                              color: c.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -200,38 +193,37 @@ class MyAddressesScreen extends ConsumerWidget {
                   ),
                 ),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: _onSurfaceVariant),
-                  color: _surfaceHigh,
+                  icon: Icon(Icons.more_vert, color: c.onSurfaceVariant),
+                  color: c.surfaceHigh,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                   itemBuilder: (_) => [
                     if (!address.isDefault)
-                      _popupItem('default', Icons.star_outline, 'Définir par défaut'),
-                    _popupItem('edit', Icons.edit_outlined, 'Modifier'),
-                    _popupItem('delete', Icons.delete_outline, 'Supprimer', isDestructive: true),
+                      _popupItem('default', Icons.star_outline, 'Définir par défaut', c: c),
+                    _popupItem('edit', Icons.edit_outlined, 'Modifier', c: c),
+                    _popupItem('delete', Icons.delete_outline, 'Supprimer',
+                        isDestructive: true, c: c),
                   ],
-                  onSelected: (value) => _handleAction(context, ref, value, address),
+                  onSelected: (value) =>
+                      _handleAction(context, ref, value, address, c),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Container(
-              height: 1,
-              color: _outlineVariant.withValues(alpha: 0.3),
-            ),
+            Container(height: 1, color: c.outlineVariant.withValues(alpha: 0.3)),
             const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.location_on_outlined, size: 16, color: _onSurfaceVariant),
+                Icon(Icons.location_on_outlined, size: 16, color: c.onSurfaceVariant),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     address.address,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: _onSurfaceVariant,
+                      color: c.onSurfaceVariant,
                       height: 1.5,
                     ),
                   ),
@@ -242,14 +234,14 @@ class MyAddressesScreen extends ConsumerWidget {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 14, color: _outlineVariant),
+                  Icon(Icons.info_outline, size: 14, color: c.outlineVariant),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       address.details,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: _outlineVariant,
+                        color: c.outlineVariant,
                       ),
                     ),
                   ),
@@ -267,8 +259,9 @@ class MyAddressesScreen extends ConsumerWidget {
     IconData icon,
     String label, {
     bool isDestructive = false,
+    required AppColors c,
   }) {
-    final color = isDestructive ? Colors.redAccent : _onSurface;
+    final color = isDestructive ? Colors.redAccent : c.onSurface;
     return PopupMenuItem(
       value: value,
       child: Row(
@@ -288,6 +281,7 @@ class MyAddressesScreen extends ConsumerWidget {
     WidgetRef ref,
     String action,
     dynamic address,
+    AppColors c,
   ) {
     switch (action) {
       case 'default':
@@ -319,29 +313,30 @@ class MyAddressesScreen extends ConsumerWidget {
         break;
 
       case 'delete':
-        _showDeleteDialog(context, ref, address);
+        _showDeleteDialog(context, ref, address, c);
         break;
     }
   }
 
-  void _showDeleteDialog(BuildContext context, WidgetRef ref, dynamic address) {
+  void _showDeleteDialog(
+      BuildContext context, WidgetRef ref, dynamic address, AppColors c) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: _surfaceHigh,
+        backgroundColor: c.surfaceHigh,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text(
+        title: Text(
           'Supprimer l\'adresse',
-          style: TextStyle(color: _onSurface, fontWeight: FontWeight.bold),
+          style: TextStyle(color: c.onSurface, fontWeight: FontWeight.bold),
         ),
         content: Text(
           'Voulez-vous vraiment supprimer "${address.name}" ?',
-          style: const TextStyle(color: _onSurfaceVariant),
+          style: TextStyle(color: c.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler', style: TextStyle(color: _onSurfaceVariant)),
+            child: Text('Annuler', style: TextStyle(color: c.onSurfaceVariant)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -381,11 +376,11 @@ class MyAddressesScreen extends ConsumerWidget {
     }
   }
 
-  Color _typeColor(String type) {
+  Color _typeColor(String type, AppColors c) {
     switch (type) {
       case 'home': return const Color(0xFF6AB2E1);
       case 'work': return const Color(0xFFFFA726);
-      default:     return _primary;
+      default:     return c.primary;
     }
   }
 }

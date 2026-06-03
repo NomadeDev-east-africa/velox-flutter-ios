@@ -6,7 +6,7 @@ import '../../../constants.dart';
 import '../search/search_screen.dart';
 import 'components/featured_items.dart';
 import 'components/iteams.dart';
-import 'components/restaurrant_info.dart';
+import 'components/restaurant_info.dart';
 import '../../../models/restaurant.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION AVIS CLIENTS — lit restaurants/{id}/avis en temps réel

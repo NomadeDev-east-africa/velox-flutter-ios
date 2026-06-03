@@ -12,7 +12,7 @@ class VeloxLoader extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image(
-              image: AssetImage('assets/images/logo_velox.webp'),
+              image: AssetImage('assets/images/logo-velox.png'),
               width: 140,
               height: 140,
             ),

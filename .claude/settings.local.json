@@ -45,7 +45,16 @@
       "Bash(gh pr *)",
       "Bash(git checkout *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "mcp__ide__getDiagnostics",
+      "Bash(Get-ChildItem -Recurse \"C:\\\\Users\\\\PC\\\\StudioProjects\\\\nomade_client\\\\lib\\\\screens\" -Filter \"*.dart\")",
+      "Bash(dir \"C:\\\\Users\\\\PC\\\\StudioProjects\\\\nomade_client\\\\assets\\\\images\\\\\" 2>&1 *)",
+      "Bash(python -c ' *)",
+      "Bash(node -e \"const now = new Date\\(\\); console.log\\(now - 30 * 60 * 1000\\); console.log\\(new Date\\(now - 30 * 60 * 1000\\)\\);\")",
+      "Bash(dir C:\\\\Users\\\\PC\\\\StudioProjects\\\\nomade_client\\\\assets\\\\google_fonts *)",
+      "Bash(dir \"C:\\\\Users\\\\PC\\\\StudioProjects\\\\nomade_client\\\\assets\\\\google_fonts\\\\\" 2>&1 *)"
     ]
   }
 }

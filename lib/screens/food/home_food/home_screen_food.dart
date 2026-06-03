@@ -2,26 +2,17 @@ import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:nomade_client/components/floating_cart_button.dart';
 import 'package:nomade_client/models/menu_item.dart';
 import 'package:nomade_client/models/restaurant.dart';
 import 'package:nomade_client/screens/food/details/details_screen.dart';
-import 'package:nomade_client/screens/food/featured/featurred_screen.dart';
-import 'package:nomade_client/screens/food/filter/filter_screen.dart';
-import 'package:nomade_client/screens/food/home_food/components/promotion_banner.dart';
+import 'package:nomade_client/screens/food/featured/featured_screen.dart';
 import 'package:nomade_client/services/menu_service.dart';
 import 'package:nomade_client/services/restaurant_service.dart';
 import 'package:nomade_client/translations/app_translations.dart';
-import 'package:nomade_client/providers/restaurant_notifier.dart';
-
-// Kinetic Monolith design system
-const _bg               = Color(0xFF0E0E0E);
-const _surface          = Color(0xFF1A1919);
-const _surfaceHigh      = Color(0xFF20201F);
-const _primary          = Color(0xFF9FFF88);
-const _onSurface        = Color(0xFFFFFFFF);
-const _onSurfaceVariant = Color(0xFFADAAAA);
-const _outlineVariant   = Color(0xFF484847);
+import 'package:nomade_client/providers/all_providers.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -49,66 +40,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    final c = isDark ? AppColors.dark : AppColors.light;
+
     return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _bg,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: _onSurface, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.location_on, color: _onSurfaceVariant, size: 12),
-                SizedBox(width: 3),
-                Text(
-                  'LIVRER À',
-                  style: TextStyle(
-                    color: _onSurfaceVariant,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.5,
+      backgroundColor: c.bg,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          color: c.surfaceLow,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: SafeArea(
+            bottom: false,
+            child: SizedBox(
+              height: 64,
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Icon(Icons.arrow_back, color: c.primary, size: 22),
                   ),
-                ),
-              ],
-            ),
-            const Text(
-              'Ville de Djibouti',
-              style: TextStyle(
-                color: _onSurface,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const FilterScreen()),
-            ),
-            child: const Text(
-              'Filtrer',
-              style: TextStyle(
-                color: _primary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'LIVRER À',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: c.onSurfaceVariant,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        Text(
+                          'Ville de Djibouti',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: c.primary,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Icon(Icons.shopping_cart_outlined, color: c.primary, size: 22),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          color: _primary,
-          backgroundColor: _surface,
+          color: c.primary,
+          backgroundColor: c.surfaceLow,
           onRefresh: _refresh,
           child: Stack(
             children: [
@@ -117,30 +107,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 24),
+                    _sectionHeader(
+                      'PAR CATÉGORIES',
+                      c: c,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const FeaturedScreen()),
+                      ),
+                    ),
                     const SizedBox(height: 16),
-                    _buildSectionHeader(
-                      context,
-                      'Par catégories',
-                      () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => const FeaturedScreen())),
+                    _CategoryRow(c: c),
+                    const SizedBox(height: 28),
+                    _PromoBanner(c: c),
+                    const SizedBox(height: 28),
+                    _sectionHeader(
+                      'MEILLEURS CHOIX',
+                      c: c,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const FeaturedScreen()),
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    const _CategoryHorizontalSection(),
-                    const SizedBox(height: 24),
-                    const PromotionBanner(),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader(
-                      context,
-                      'Meilleurs choix',
-                      () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => const FeaturedScreen())),
+                    const SizedBox(height: 16),
+                    _PopularList(c: c),
+                    const SizedBox(height: 28),
+                    _sectionHeader(
+                      tr('all_restaurants').toUpperCase(),
+                      c: c,
+                      onTap: () {},
                     ),
-                    const SizedBox(height: 12),
-                    _PopularSection(),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader(context, tr('all_restaurants'), () {}),
-                    const SizedBox(height: 12),
-                    _AllRestaurantsSection(),
+                    const SizedBox(height: 16),
+                    _AllRestaurantsList(c: c),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -159,7 +157,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-Widget _buildSectionHeader(BuildContext context, String title, VoidCallback onSeeAll) {
+// ════════════════════════════════════════════════════════════
+// SECTION HEADER
+// ════════════════════════════════════════════════════════════
+
+Widget _sectionHeader(String title, {required VoidCallback onTap, required AppColors c}) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 20),
     child: Row(
@@ -167,21 +169,22 @@ Widget _buildSectionHeader(BuildContext context, String title, VoidCallback onSe
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: _onSurface,
+          style: GoogleFonts.spaceGrotesk(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.4,
+            fontWeight: FontWeight.w800,
+            color: c.onSurface,
+            letterSpacing: -0.5,
           ),
         ),
         GestureDetector(
-          onTap: onSeeAll,
-          child: const Text(
-            'Voir tout',
-            style: TextStyle(
-              color: _primary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          onTap: onTap,
+          child: Text(
+            'VOIR TOUT',
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: c.primary,
+              letterSpacing: 2,
             ),
           ),
         ),
@@ -190,18 +193,19 @@ Widget _buildSectionHeader(BuildContext context, String title, VoidCallback onSe
   );
 }
 
-// ─── Catégories ─────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+// CATEGORIES — horizontal scroll, square tiles
+// ════════════════════════════════════════════════════════════
 
-class _CategoryHorizontalSection extends StatefulWidget {
-  const _CategoryHorizontalSection();
+class _CategoryRow extends StatefulWidget {
+  final AppColors c;
+  const _CategoryRow({required this.c});
 
   @override
-  State<_CategoryHorizontalSection> createState() =>
-      _CategoryHorizontalSectionState();
+  State<_CategoryRow> createState() => _CategoryRowState();
 }
 
-class _CategoryHorizontalSectionState
-    extends State<_CategoryHorizontalSection> {
+class _CategoryRowState extends State<_CategoryRow> {
   final MenuService _menuService = MenuService();
   final RestaurantService _restaurantService = RestaurantService();
   Map<String, MenuItem> _categoryMenus = {};
@@ -212,10 +216,10 @@ class _CategoryHorizontalSectionState
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadCategories());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  Future<void> _loadCategories() async {
+  Future<void> _load() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
@@ -244,16 +248,15 @@ class _CategoryHorizontalSectionState
       final fetched = await Future.wait(
         uniqueIds.map((id) => _restaurantService.getRestaurantById(id)),
       );
-      final restaurantById = {
+      final byId = {
         for (var i = 0; i < uniqueIds.length; i++) uniqueIds[i]: fetched[i],
-      };
-      final Map<String, Restaurant?> restaurants = {
-        for (final e in entries) e.key: restaurantById[e.value.restaurantId],
       };
       if (!mounted) return;
       setState(() {
         _categoryMenus = picked;
-        _categoryRestaurants = restaurants;
+        _categoryRestaurants = {
+          for (final e in entries) e.key: byId[e.value.restaurantId],
+        };
         _categoryKeys = picked.keys.toList();
         _isLoading = false;
       });
@@ -264,20 +267,19 @@ class _CategoryHorizontalSectionState
 
   @override
   Widget build(BuildContext context) {
+    final c = widget.c;
+
     if (_isLoading) {
       return SizedBox(
-        height: 110,
+        height: 128,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           itemCount: 5,
           itemBuilder: (_, _) => Container(
-            width: 88,
+            width: 128,
             margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(14),
-            ),
+            color: c.surfaceLow,
           ),
         ),
       );
@@ -286,15 +288,15 @@ class _CategoryHorizontalSectionState
     if (_categoryMenus.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 110,
+      height: 128,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: _categoryKeys.length,
-        itemBuilder: (context, index) {
-          final category = _categoryKeys[index];
-          final menu = _categoryMenus[category]!;
-          final restaurant = _categoryRestaurants[category];
+        itemBuilder: (context, i) {
+          final cat = _categoryKeys[i];
+          final menu = _categoryMenus[cat]!;
+          final restaurant = _categoryRestaurants[cat];
           final imageUrl = menu.imageUrl;
           final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
@@ -304,23 +306,16 @@ class _CategoryHorizontalSectionState
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => DetailsScreen(restaurant: restaurant),
-                  ),
+                      builder: (_) => DetailsScreen(restaurant: restaurant)),
                 );
               }
             },
-            child: Container(
-              width: 88,
-              margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                color: _surface,
-                border: Border.all(
-                  color: _outlineVariant.withValues(alpha: 0.15),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 128,
+              height: 128,
+              child: Container(
+                margin: const EdgeInsets.only(right: 12),
+                color: c.surfaceLow,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -328,48 +323,47 @@ class _CategoryHorizontalSectionState
                       CachedNetworkImage(
                         imageUrl: imageUrl,
                         fit: BoxFit.cover,
-                        memCacheWidth: (88 * MediaQuery.of(context).devicePixelRatio).toInt(),
-                        placeholder: (_, _) =>
-                            Container(color: _surfaceHigh),
+                        memCacheWidth:
+                            (128 * MediaQuery.of(context).devicePixelRatio)
+                                .toInt(),
+                        placeholder: (_, _) => Container(color: c.surfaceLow),
                         errorWidget: (_, _, _) => Container(
-                          color: _surfaceHigh,
-                          child: const Icon(Icons.fastfood,
-                              size: 28, color: _onSurfaceVariant),
+                          color: c.surfaceHigh,
+                          child: Icon(Icons.fastfood,
+                              size: 32, color: c.onSurfaceVariant),
                         ),
                       )
                     else
                       Container(
-                        color: _surfaceHigh,
-                        child: const Icon(Icons.fastfood,
-                            size: 28, color: _onSurfaceVariant),
+                        color: c.surfaceHigh,
+                        child: Icon(Icons.fastfood,
+                            size: 32, color: c.onSurfaceVariant),
                       ),
-                    Positioned.fill(
-                      child: Container(
+                    // Gradient overlay — toujours sombre pour lisibilité du texte
+                    const Positioned.fill(
+                      child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.75),
-                            ],
+                            colors: [Colors.transparent, Color(0xCC000000)],
                           ),
                         ),
                       ),
                     ),
                     Positioned(
-                      left: 6,
-                      right: 6,
+                      left: 8,
                       bottom: 8,
+                      right: 8,
                       child: Text(
-                        category,
-                        textAlign: TextAlign.center,
+                        cat.toUpperCase(),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: GoogleFonts.spaceGrotesk(
                           fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 1,
                           height: 1.2,
                         ),
                       ),
@@ -385,9 +379,75 @@ class _CategoryHorizontalSectionState
   }
 }
 
-// ─── Meilleurs choix ────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+// PROMO BANNER
+// ════════════════════════════════════════════════════════════
 
-class _PopularSection extends ConsumerWidget {
+class _PromoBanner extends StatelessWidget {
+  final AppColors c;
+  const _PromoBanner({required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: SizedBox(
+        width: double.infinity,
+        child: Container(
+          color: c.primary,
+          padding: const EdgeInsets.all(24),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                right: -12,
+                bottom: -12,
+                child: Opacity(
+                  opacity: 0.15,
+                  child: Icon(Icons.track_changes,
+                      size: 120, color: c.onPrimary),
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '⏱️ Arrive avant ta prochaine série',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: c.onPrimary,
+                      height: 1.1,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Zéro frais caché. Zéro attente. Juste bon.',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: c.onPrimary.withValues(alpha: 0.8),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// POPULAR LIST — horizontal scroll
+// ════════════════════════════════════════════════════════════
+
+class _PopularList extends ConsumerWidget {
+  final AppColors c;
+  const _PopularList({required this.c});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final popular = ref.watch(popularRestaurantsProvider);
@@ -395,16 +455,16 @@ class _PopularSection extends ConsumerWidget {
 
     if (loading && popular.isEmpty) {
       return SizedBox(
-        height: 200,
+        height: 210,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           itemCount: 3,
           itemBuilder: (_, _) => Container(
-            width: 200,
-            margin: const EdgeInsets.only(right: 12),
+            width: 170,
+            margin: const EdgeInsets.only(right: 14),
             decoration: BoxDecoration(
-              color: _surface,
+              color: c.surfaceLow,
               borderRadius: BorderRadius.circular(16),
             ),
           ),
@@ -415,197 +475,313 @@ class _PopularSection extends ConsumerWidget {
     if (popular.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 220,
+      height: 210,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: popular.length,
-        itemBuilder: (context, index) {
-          final r = popular[index];
-          return GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => DetailsScreen(restaurant: r)),
-            ),
-            child: Container(
-              width: 200,
-              margin: const EdgeInsets.only(right: 12),
-              decoration: BoxDecoration(
-                color: _surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _outlineVariant.withValues(alpha: 0.12),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                    child: CachedNetworkImage(
-                      imageUrl: r.imageUrl,
-                      height: 130,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      memCacheWidth: (200 * MediaQuery.of(context).devicePixelRatio).toInt(),
-                      memCacheHeight: (130 * MediaQuery.of(context).devicePixelRatio).toInt(),
-                      placeholder: (_, _) =>
-                          Container(height: 130, color: _surfaceHigh),
-                      errorWidget: (_, _, _) => Container(
-                        height: 130,
-                        color: _surfaceHigh,
-                        child: const Icon(Icons.restaurant,
-                            size: 40, color: _onSurfaceVariant),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          r.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _onSurface,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(Icons.star,
-                                color: _primary, size: 13),
-                            const SizedBox(width: 4),
-                            Text(
-                              r.rating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                color: _primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.access_time,
-                                color: _onSurfaceVariant, size: 12),
-                            const SizedBox(width: 3),
-                            const Text(
-                              '25 min',
-                              style: TextStyle(
-                                color: _onSurfaceVariant,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+        itemBuilder: (context, i) => _PopularCard(restaurant: popular[i], c: c),
       ),
     );
   }
 }
 
-// ─── Tous les restaurants ───────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+// POPULAR CARD — compact horizontal card
+// ════════════════════════════════════════════════════════════
 
-class _AllRestaurantsSection extends ConsumerWidget {
+class _PopularCard extends ConsumerWidget {
+  final Restaurant restaurant;
+  final AppColors c;
+  const _PopularCard({required this.restaurant, required this.c});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFav = ref.watch(
+      favoritesNotifierProvider.select((ids) => ids.contains(restaurant.id)),
+    );
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => DetailsScreen(restaurant: restaurant)),
+      ),
+      child: Container(
+        width: 170,
+        margin: const EdgeInsets.only(right: 14),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: c.outlineVariant.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Image ────────────────────────────────────────
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Stack(
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: restaurant.imageUrl,
+                    width: 170,
+                    height: 115,
+                    fit: BoxFit.cover,
+                    memCacheWidth: (170 * 2).toInt(),
+                    placeholder: (_, _) =>
+                        Container(width: 170, height: 115, color: c.surfaceHigh),
+                    errorWidget: (_, _, _) => Container(
+                      width: 170,
+                      height: 115,
+                      color: c.surfaceHigh,
+                      child: Icon(Icons.restaurant, color: c.onSurfaceVariant, size: 32),
+                    ),
+                  ),
+                  // Favori
+                  Positioned(
+                    top: 7,
+                    right: 7,
+                    child: GestureDetector(
+                      onTap: () => ref
+                          .read(favoritesNotifierProvider.notifier)
+                          .toggleFavorite(restaurant.id),
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: c.surfaceTop.withValues(alpha: 0.85),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isFav ? Icons.favorite : Icons.favorite_border,
+                          color: isFav ? Colors.redAccent : c.onSurfaceVariant,
+                          size: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Badge ouvert/fermé
+                  Positioned(
+                    bottom: 7,
+                    left: 7,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: restaurant.isOpen
+                            ? c.primary
+                            : c.surfaceTop.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        restaurant.isOpen ? 'OUVERT' : 'FERMÉ',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: restaurant.isOpen ? c.onPrimary : c.onSurfaceVariant,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // ── Info ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    restaurant.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: c.onSurface,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Icon(Icons.star, color: c.primary, size: 12),
+                      const SizedBox(width: 3),
+                      Text(
+                        restaurant.rating.toStringAsFixed(1),
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: c.onSurface,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.schedule_outlined, size: 11, color: c.onSurfaceVariant),
+                      const SizedBox(width: 3),
+                      Text(
+                        '25 min',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          color: c.onSurfaceVariant,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// ALL RESTAURANTS LIST
+// ════════════════════════════════════════════════════════════
+
+class _AllRestaurantsList extends ConsumerWidget {
+  final AppColors c;
+  const _AllRestaurantsList({required this.c});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final restaurants = ref.watch(allRestaurantsProvider);
     final loading = ref.watch(restaurantsLoadingProvider);
 
     if (loading && restaurants.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(20),
+      return Padding(
+        padding: const EdgeInsets.all(32),
         child: Center(
-          child: CircularProgressIndicator(
-            color: _primary,
-            strokeWidth: 2,
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(color: c.primary, strokeWidth: 2),
           ),
         ),
       );
     }
 
     if (restaurants.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(20),
-        child: Center(
-          child: Text(
-            'Aucun restaurant disponible',
-            style: TextStyle(color: _onSurfaceVariant),
-          ),
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          'Aucun restaurant disponible',
+          style: GoogleFonts.inter(color: c.onSurfaceVariant, fontSize: 14),
         ),
       );
     }
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: restaurants.length,
-      itemBuilder: (_, i) => _DarkRestaurantCard(restaurant: restaurants[i]),
+    return Column(
+      children: restaurants
+          .map((r) => RepaintBoundary(child: _RestaurantCard(restaurant: r, c: c)))
+          .toList(),
     );
   }
 }
 
-class _DarkRestaurantCard extends StatelessWidget {
-  final Restaurant restaurant;
+// ════════════════════════════════════════════════════════════
+// RESTAURANT CARD
+// ════════════════════════════════════════════════════════════
 
-  const _DarkRestaurantCard({required this.restaurant});
+class _RestaurantCard extends ConsumerWidget {
+  final Restaurant restaurant;
+  final AppColors c;
+
+  const _RestaurantCard({required this.restaurant, required this.c});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFav = ref.watch(
+      favoritesNotifierProvider.select((ids) => ids.contains(restaurant.id)),
+    );
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => DetailsScreen(restaurant: restaurant),
-        ),
+            builder: (_) => DetailsScreen(restaurant: restaurant)),
       ),
       child: Container(
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
         decoration: BoxDecoration(
-          color: _surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: _outlineVariant.withValues(alpha: 0.12),
+          color: c.surfaceLow,
+          border: Border(
+            left: BorderSide(
+              color: restaurant.isOpen ? c.primary : Colors.transparent,
+              width: 2,
+            ),
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(18)),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: CachedNetworkImage(
-                  imageUrl: restaurant.imageUrl,
-                  fit: BoxFit.cover,
-                  memCacheWidth: MediaQuery.of(context).size.width.toInt(),
-                  placeholder: (_, _) =>
-                      Container(color: _surfaceHigh),
-                  errorWidget: (_, _, _) => Container(
-                    color: _surfaceHigh,
-                    child: const Icon(Icons.restaurant,
-                        size: 60, color: _onSurfaceVariant),
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: restaurant.imageUrl,
+                    fit: BoxFit.cover,
+                    memCacheWidth: MediaQuery.of(context).size.width.toInt(),
+                    placeholder: (_, _) => Container(color: c.surfaceHigh),
+                    errorWidget: (_, _, _) => Container(
+                      color: c.surfaceHigh,
+                      child: Icon(Icons.restaurant,
+                          size: 48, color: c.onSurfaceVariant),
+                    ),
                   ),
-                ),
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      color: c.surfaceTop.withValues(alpha: 0.8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.star, color: c.primary, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            restaurant.rating.toStringAsFixed(1),
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: c.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: GestureDetector(
+                      onTap: () => ref
+                          .read(favoritesNotifierProvider.notifier)
+                          .toggleFavorite(restaurant.id),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: c.surfaceTop.withValues(alpha: 0.85),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isFav ? Icons.favorite : Icons.favorite_border,
+                          color: isFav ? Colors.redAccent : c.onSurfaceVariant,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Infos
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -613,65 +789,47 @@ class _DarkRestaurantCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          restaurant.name,
-                          style: const TextStyle(
-                            color: _onSurface,
+                          restaurant.name.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.spaceGrotesk(
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w800,
+                            color: c.onSurface,
                             letterSpacing: -0.3,
                           ),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(50),
-                          border: Border.all(
-                            color: _primary.withValues(alpha: 0.25),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.star,
-                                color: _primary, size: 13),
-                            const SizedBox(width: 4),
-                            Text(
-                              restaurant.rating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                color: _primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.schedule_outlined,
+                              color: c.onSurfaceVariant, size: 13),
+                          const SizedBox(width: 4),
+                          Text(
+                            '25 MIN',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: c.onSurfaceVariant,
+                              letterSpacing: 1,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    restaurant.address,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _onSurfaceVariant,
-                      fontSize: 13,
-                    ),
-                  ),
                   const SizedBox(height: 10),
                   Wrap(
-                    spacing: 8,
+                    spacing: 6,
                     runSpacing: 4,
                     children: [
-                      _buildChip(
-                          Icons.access_time_rounded, '25 min'),
-                      _buildChip(
-                          Icons.delivery_dining_rounded, 'Livraison gratuite'),
-                      _buildChip(
-                          Icons.receipt_long_rounded,
-                          '${restaurant.totalOrders} commandes'),
+                      _chip(
+                        restaurant.isOpen ? 'OUVERT' : 'FERMÉ',
+                        active: restaurant.isOpen,
+                        c: c,
+                      ),
+                      _chip('${restaurant.totalOrders} CMDS', c: c),
                     ],
                   ),
                 ],
@@ -683,20 +841,19 @@ class _DarkRestaurantCard extends StatelessWidget {
     );
   }
 
-  Widget _buildChip(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: _onSurfaceVariant, size: 13),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: _onSurfaceVariant,
-            fontSize: 12,
-          ),
+  Widget _chip(String label, {bool active = false, required AppColors c}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      color: active ? c.primary.withValues(alpha: 0.1) : c.surfaceHigh,
+      child: Text(
+        label,
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: active ? c.primary : c.onSurfaceVariant,
+          letterSpacing: 1.5,
         ),
-      ],
+      ),
     );
   }
 }

@@ -4,7 +4,7 @@ import '../models/menu_item.dart';
 
 class MenuService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String _menusCollection = 'menu_items'; // Collection séparée !
+  final String _menusCollection = 'menuItems';
 
   // Stream de tous les menus d'un restaurant
   Stream<List<MenuItem>> streamMenus(String restaurantId) {

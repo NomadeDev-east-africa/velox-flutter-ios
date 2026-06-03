@@ -310,10 +310,12 @@ class UserNotifier extends StateNotifier<UserState> {
     if (user == null) throw Exception('Utilisateur non connecté');
 
     try {
+      // Auth first — if this throws requires-recent-login, Firestore est intact
+      // et l'utilisateur peut se ré-authentifier et réessayer.
+      await user.delete();
       await _firestore.collection('users').doc(user.uid).delete();
       await HiveService.clearAllSession();
       await LocalCache.clearUser();
-      await user.delete();
       _clearUserData();
       debugPrint('✅ [UserNotifier] Compte supprimé');
     } catch (e) {

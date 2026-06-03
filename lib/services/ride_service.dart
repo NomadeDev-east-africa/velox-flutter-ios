@@ -160,6 +160,7 @@ class RideService {
           .where('status', whereIn: [
             'requested',
             'accepted',
+            'arriving',
             'arrived',
             'started',
           ])

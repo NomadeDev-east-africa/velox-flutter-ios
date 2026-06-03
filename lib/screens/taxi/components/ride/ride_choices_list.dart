@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nomade_client/models/ride_choice.dart';
 import 'package:nomade_client/data/mock_taxi_data.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 import 'ride_choice_card.dart';
 
 /// Liste des choix de véhicules
@@ -9,12 +10,14 @@ class RideChoicesList extends StatefulWidget {
     super.key,
     required this.distance,
     required this.onRideSelected,
+    required this.c,
     this.selectedRideId,
   });
 
   final double distance;
   final ValueChanged<RideChoice> onRideSelected;
   final String? selectedRideId;
+  final AppColors c;
 
   @override
   State<RideChoicesList> createState() => _RideChoicesListState();
@@ -52,6 +55,7 @@ class _RideChoicesListState extends State<RideChoicesList> {
           ride: ride,
           distance: widget.distance,
           isSelected: isSelected,
+          c: widget.c,
           onTap: () {
             setState(() {
               selectedRide = ride;

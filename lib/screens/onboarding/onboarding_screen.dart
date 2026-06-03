@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth-firebase/auth/sign_in_screen.dart';
 import 'components/onboard_content.dart';
+import 'package:nomade_client/providers/theme_notifier.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 
-// Kinetic Monolith design system
-const _bg               = Color(0xFF0E0E0E);
-const _primary          = Color(0xFF9FFF88);
-const _onPrimary        = Color(0xFF026400);
-const _onSurfaceVariant = Color(0xFFADAAAA);
-
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int currentPage = 0;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    final c = isDark ? AppColors.dark : AppColors.light;
+
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: c.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -35,6 +35,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   illustration: demoData[index]["illustration"],
                   title: demoData[index]["title"],
                   text: demoData[index]["text"],
+                  c: c,
                 ),
               ),
             ),
@@ -43,7 +44,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
                 demoData.length,
-                (index) => _buildDot(index == currentPage),
+                (index) => _buildDot(index == currentPage, c),
               ),
             ),
             const Spacer(flex: 2),
@@ -55,8 +56,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   MaterialPageRoute(builder: (_) => const SignInScreen()),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
-                  foregroundColor: _onPrimary,
+                  backgroundColor: c.primary,
+                  foregroundColor: c.onPrimary,
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -80,14 +81,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildDot(bool isActive) {
+  Widget _buildDot(bool isActive, AppColors c) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.symmetric(horizontal: 4),
       width: isActive ? 24 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: isActive ? _primary : _onSurfaceVariant.withValues(alpha: 0.4),
+        color: isActive ? c.primary : c.onSurfaceVariant.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -98,8 +99,7 @@ List<Map<String, dynamic>> demoData = [
   {
     "illustration": "assets/Illustrations/velox1.svg",
     "title": "Bienvenue sur Velox",
-    "text":
-        " Ici, chaque seconde compte",
+    "text": " Ici, chaque seconde compte",
   },
   {
     "illustration": "assets/Illustrations/velox2.svg",

@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'constants.dart';
 import 'translations/app_translations.dart';
-import 'screens/onboarding/onboarding_scrreen.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/homeScreen/home_screen_app.dart';
 import 'screens/taxi/tracking_screen.dart';
 import 'screens/food/food_tracking/order_tracking_screen.dart';
@@ -87,17 +86,8 @@ void main() {
         );
       }
 
-      // App Check — DebugProvider en dev, PlayIntegrity en prod
-      if (kDebugMode) {
-        unawaited(FirebaseAppCheck.instance.activate(
-          providerAndroid: AndroidDebugProvider(),
-        ).catchError((e) => debugPrint('⚠️ App Check debug: $e')));
-      } else {
-        unawaited(FirebaseAppCheck.instance.activate(
-          providerAndroid: AndroidPlayIntegrityProvider(),
-          providerApple: AppleDeviceCheckProvider(),
-        ).catchError((e) => debugPrint('⚠️ App Check: $e')));
-      }
+      // App Check désactivé temporairement — à réactiver avant publication store
+      // avec un debug token enregistré dans Firebase Console → App Check
 
       FirebaseMessaging.onBackgroundMessage(
           _firebaseMessagingBackgroundHandler);
@@ -112,6 +102,10 @@ void main() {
 
       // Ces services sont nécessaires avant runApp (Hive, cache, traductions)
       // Mais ils sont rapides (<50ms)
+      // Désactiver le téléchargement des polices à l'exécution —
+      // les fichiers doivent être présents dans assets/google_fonts/
+      GoogleFonts.config.allowRuntimeFetching = false;
+
       await Future.wait([
         HiveService.init(),
         LocalCache.init(),

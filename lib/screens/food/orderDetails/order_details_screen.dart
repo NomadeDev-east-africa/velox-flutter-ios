@@ -7,6 +7,7 @@ import 'package:nomade_client/models/order_item.dart';
 import 'package:nomade_client/providers/all_providers.dart';
 import 'package:nomade_client/screens/food/food_tracking/delivery_address_picker_screen.dart';
 import 'package:nomade_client/screens/food/food_tracking/order_tracking_screen.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 
 // ✅ PHASE 4 : cart_provider.dart SUPPRIMÉ — remplacé par cartProvider Riverpod
 // ✅ Navigation déplacée ici (CartNotifier ne navigue plus)
@@ -29,8 +30,8 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   LatLng? _deliveryLocation;
 
   // ── Palette dynamique (light / dark) ──────────────────────
-  static const Color _accent    = Color(0xFFA6FF00);
-  static const Color _onAccent  = Color(0xFF112000);
+  late Color _accent;
+  late Color _onAccent;
   late Color _bg;
   late Color _card;
   late Color _itemCard;
@@ -51,8 +52,10 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeState = ref.watch(themeNotifierProvider);
-    final isDark = themeState.isDarkMode;
+    final isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    final c = isDark ? AppColors.dark : AppColors.light;
+    _accent       = c.primary;
+    _onAccent     = c.onPrimary;
     _bg           = isDark ? const Color(0xFF121212) : const Color(0xFFFFF5EE);
     _card         = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFEEDE4);
     _itemCard     = isDark ? const Color(0xFF2A2A2A) : Colors.white;
@@ -114,10 +117,10 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.location_on, color: _accent, size: 18),
+                  child: Icon(Icons.location_on, color: _accent, size: 18),
                 ),
                 const SizedBox(width: 6),
-                const Text(
+                Text(
                   'Checkout',
                   style: TextStyle(
                     color: _accent,
@@ -163,7 +166,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
             ),
             GestureDetector(
               onTap: _pickAddress,
-              child: const Text(
+              child: Text(
                 'CHANGE',
                 style: TextStyle(
                   color: _accent,
@@ -201,7 +204,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                                 size: const Size(double.infinity, 90),
                                 painter: _MapGridPainter(),
                               ),
-                              const Center(
+                              Center(
                                 child: Icon(Icons.location_on,
                                     color: _accent, size: 30),
                               ),
@@ -358,7 +361,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
             children: [
               Text(
                 '${item.totalPrice} FDJ',
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: _accent,
                     fontSize: 14),
@@ -396,7 +399,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       width: 56,
       height: 56,
       color: _card,
-      child: const Icon(Icons.fastfood, color: _accent, size: 28),
+      child: Icon(Icons.fastfood, color: _accent, size: 28),
     );
   }
 
@@ -472,7 +475,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                             child: Container(
                               width: 10,
                               height: 10,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                   color: _accent, shape: BoxShape.circle),
                             ),
                           )
@@ -560,7 +563,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                       fontWeight: FontWeight.bold, fontSize: 17, color: _textPrimary)),
               Text(
                 '${cart.total} FDJ',
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
                     color: _accent),
@@ -596,7 +599,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       color: _bg,
       child: SafeArea(
         child: _isProcessing
-            ? const Center(
+            ? Center(
                 child: CircularProgressIndicator(color: _accent))
             : SizedBox(
                 width: double.infinity,

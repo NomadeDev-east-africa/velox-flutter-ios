@@ -2,136 +2,118 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:nomade_client/constants.dart';
 import 'package:nomade_client/models/ride.dart';
 import 'package:nomade_client/providers/all_providers.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 import 'ride_completion_screen.dart';
 
-/// Écran de suivi en temps réel de la course
-/// PHASE 3 : migré de RideProvider (provider) → activeRideProvider (Riverpod)
+/// Écran de suivi en temps réel — design Kinetic Monolith
 class TrackingScreen extends ConsumerStatefulWidget {
   const TrackingScreen({super.key});
 
   @override
-  ConsumerState<TrackingScreen> createState() =>
-      _TrackingScreenState();
+  ConsumerState<TrackingScreen> createState() => _TrackingScreenState();
 }
 
 class _TrackingScreenState extends ConsumerState<TrackingScreen>
     with SingleTickerProviderStateMixin {
 
-  final MapController     _mapController  = MapController();
-  late AnimationController _pulseController;
-
+  final MapController _mapController = MapController();
   bool _showCompletionDialog = false;
   bool _noDriverPopupShown   = false;
-
-  @override
-  void initState() {
-    super.initState();
-    debugPrint('🚗 TrackingScreen initState');
-
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-
-    // ✅ Plus besoin de startWatchingRide() ici.
-    // ActiveRideNotifier s'initialise tout seul depuis Hive + Firestore.
-  }
+  late AppColors _c;
+  late bool _isDark;
 
   @override
   void dispose() {
-    debugPrint('🛑 TrackingScreen dispose');
-    _pulseController.dispose();
     _mapController.dispose();
     super.dispose();
   }
 
-  // ─── Couleurs / textes selon statut ──────────────────────────
-
-  Color _getStatusColor(RideStatus status) {
-    switch (status) {
-      case RideStatus.requested:         return Colors.orange;
-      case RideStatus.accepted:          return Colors.blue;
-      case RideStatus.arriving:          return Colors.blue.shade700;
-      case RideStatus.arrived:           return Colors.green;
-      case RideStatus.started:           return primaryColor;
-      case RideStatus.completed:         return Colors.green.shade700;
-      case RideStatus.cancelled:         return Colors.red;
-      case RideStatus.noDriverAvailable: return Colors.red.shade800;
-    }
-  }
+  // ════════════════════════════════════════════════════════════
+  // STATUS HELPERS
+  // ════════════════════════════════════════════════════════════
 
   Map<String, dynamic> _getStatusInfo(RideStatus status) {
     switch (status) {
       case RideStatus.requested:
         return {
-          'text': 'Recherche d\'un chauffeur...',
-          'icon': Icons.search,
+          'label': 'SCAN_RÉSEAU',
+          'text':  'Recherche d\'un commandant de bord...',
           'showTimer': true,
         };
       case RideStatus.accepted:
         return {
-          'text': 'Chauffeur en route',
-          'icon': Icons.directions_car,
+          'label': 'COMMANDANT_ASSIGNÉ',
+          'text':  'Chauffeur en route vers vous',
           'showTimer': false,
         };
       case RideStatus.arriving:
         return {
-          'text': 'Votre chauffeur approche !',
-          'icon': Icons.near_me,
+          'label': 'APPROCHE_IMMINENTE',
+          'text':  'Votre chauffeur approche !',
           'showTimer': false,
         };
       case RideStatus.arrived:
         return {
-          'text': 'Votre chauffeur est arrivé !',
-          'icon': Icons.location_on,
+          'label': 'ARRIVÉE_CONFIRMÉE',
+          'text':  'Votre chauffeur est arrivé !',
           'showTimer': false,
         };
       case RideStatus.started:
         return {
-          'text': 'En route vers votre destination',
-          'icon': Icons.navigation,
+          'label': 'EN_TRANSIT',
+          'text':  'En route vers la destination',
           'showTimer': true,
         };
       case RideStatus.completed:
         return {
-          'text': 'Course terminée !',
-          'icon': Icons.check_circle,
+          'label': 'MISSION_ACCOMPLIE',
+          'text':  'Course terminée',
           'showTimer': false,
         };
       case RideStatus.cancelled:
       case RideStatus.noDriverAvailable:
         return {
-          'text': 'Course annulée',
-          'icon': Icons.cancel,
+          'label': 'COURSE_ANNULÉE',
+          'text':  'Course annulée',
           'showTimer': false,
         };
     }
   }
 
-  // ─── Annulation ──────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════
+  // ACTIONS
+  // ════════════════════════════════════════════════════════════
 
   Future<void> _cancelRide() async {
+    final c = _c;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Annuler la course ?'),
-        content: const Text('Êtes-vous sûr de vouloir annuler ?'),
+        backgroundColor: c.surfaceLow,
+        title: Text(
+          'ANNULER LA COURSE ?',
+          style: GoogleFonts.spaceGrotesk(
+              color: c.onSurface, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'Êtes-vous sûr de vouloir annuler cette course ?',
+          style: GoogleFonts.inter(color: c.onSurfaceVariant),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Non'),
+            child: Text('NON',
+                style: GoogleFonts.spaceGrotesk(color: c.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Oui, annuler',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: Text('OUI, ANNULER',
+                style: GoogleFonts.spaceGrotesk(color: c.error)),
           ),
         ],
       ),
@@ -146,72 +128,87 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Erreur annulation: $e'),
-              backgroundColor: Colors.red,
-            ),
+                content: Text('Erreur annulation: $e'),
+                backgroundColor: _c.error),
           );
         }
       }
     }
   }
 
-  // ─── Navigation vers completion ──────────────────────────────
-
   void _navigateToCompletion(Ride ride) {
     if (_showCompletionDialog) return;
     _showCompletionDialog = true;
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => RideCompletionScreen(ride: ride),
-        ),
+        MaterialPageRoute(builder: (_) => RideCompletionScreen(ride: ride)),
       );
     });
   }
 
-  // ─── BUILD ───────────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════
+  // BUILD
+  // ════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Riverpod : watch activeRideProvider
+    _isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    _c = _isDark ? AppColors.dark : AppColors.light;
+
     final rideState = ref.watch(activeRideProvider);
 
-    // Réagir aux transitions de statut
     ref.listen<ActiveRideState>(activeRideProvider, (prev, next) {
       if (next.ride == null || !mounted) return;
       final ride = next.ride!;
 
-      // Course terminée → navigation
       if (ride.status == RideStatus.completed && !_showCompletionDialog) {
         _navigateToCompletion(ride);
       }
 
-      // Aucun chauffeur → popup avant retour
       if (ride.status == RideStatus.noDriverAvailable &&
           !_noDriverPopupShown &&
           mounted) {
         _noDriverPopupShown = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
+          final c = _c;
           showDialog(
             context: context,
             barrierDismissible: false,
             builder: (_) => AlertDialog(
-              title: const Text('Aucun chauffeur disponible'),
-              content: const Text(
-                'Désolé, aucun chauffeur n\'est disponible dans votre zone pour le moment.\n\nVeuillez réessayer dans quelques minutes.',
+              backgroundColor: c.surfaceLow,
+              title: Text(
+                'AUCUN COMMANDANT',
+                style: GoogleFonts.spaceGrotesk(
+                    color: c.onSurface, fontWeight: FontWeight.w800),
+              ),
+              content: Text(
+                'Aucun chauffeur disponible dans votre zone. Réessayez dans quelques minutes.',
+                style: GoogleFonts.inter(color: c.onSurfaceVariant),
               ),
               actions: [
-                ElevatedButton(
-                  onPressed: () {
+                GestureDetector(
+                  onTap: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).popUntil((r) => r.isFirst);
                     ref.read(activeRideProvider.notifier).clearRide();
                   },
-                  child: const Text('Retour à l\'accueil'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    color: c.primary,
+                    child: Text(
+                      'RETOUR',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        color: c.onPrimary,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -219,234 +216,257 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen>
         });
       }
 
-      // Course annulée → retour accueil
       if (ride.status == RideStatus.cancelled && mounted) {
         Navigator.of(context).popUntil((r) => r.isFirst);
         ref.read(activeRideProvider.notifier).clearRide();
       }
     });
 
-    // ── Chargement ──────────────────────────────────────────────
-    if ((rideState.isLoading || rideState.isWatching) && rideState.ride == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+    final tileUrl = _isDark
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+    // Loading
+    if ((rideState.isLoading || rideState.isWatching) &&
+        rideState.ride == null) {
+      return Scaffold(
+        backgroundColor: _c.bg,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                    color: _c.primary, strokeWidth: 2),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'INITIALISATION...',
+                style: GoogleFonts.spaceGrotesk(
+                    color: _c.onSurfaceVariant, fontSize: 11, letterSpacing: 2),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
-    // ── Erreur ──────────────────────────────────────────────────
+    // Error
     if (rideState.error != null && rideState.ride == null) {
       return _buildErrorScreen(rideState.error!);
     }
 
-    // ── Pas de course active (après nettoyage) ──────────────────
+    // No ride — navigate home
     if (rideState.ride == null) {
-      // Retourner à l'accueil proprement
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
       });
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: _c.bg,
+        body: Center(
+          child: CircularProgressIndicator(color: _c.primary),
+        ),
       );
     }
 
     final ride = rideState.ride!;
-    final statusInfo  = _getStatusInfo(ride.status);
-    final statusColor = _getStatusColor(ride.status);
+    final statusInfo = _getStatusInfo(ride.status);
+    final canCancel = ride.status == RideStatus.requested ||
+        ride.status == RideStatus.accepted ||
+        ride.status == RideStatus.arriving ||
+        ride.status == RideStatus.arrived;
+    final timerStart = ride.status == RideStatus.started
+        ? (ride.startedAt ?? ride.requestedAt)
+        : ride.requestedAt;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Suivi de course'),
-        backgroundColor: statusColor,
-        automaticallyImplyLeading: false,
-        actions: [
-          if (ride.status == RideStatus.requested ||
-              ride.status == RideStatus.accepted ||
-              ride.status == RideStatus.arriving ||
-              ride.status == RideStatus.arrived)
-            TextButton(
-              onPressed: _cancelRide,
-              child: const Text(
-                'Annuler',
-                style: TextStyle(color: Colors.white),
+      backgroundColor: _c.bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildAppBar(),
+            Expanded(
+              child: Stack(
+                children: [
+                  _buildMap(ride, tileUrl),
+                  // Status banner — top overlay
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    right: 16,
+                    child: _buildStatusBanner(
+                      statusInfo: statusInfo,
+                      isWatching: rideState.isWatching,
+                      showTimer: statusInfo['showTimer'] as bool,
+                      timerStart: timerStart,
+                    ),
+                  ),
+                  // Side action buttons
+                  Positioned(
+                    right: 16,
+                    top: 0,
+                    bottom: 0,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: _buildSideActions(),
+                    ),
+                  ),
+                  // Bottom control panel
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    right: 16,
+                    child: _buildBottomPanel(ride, canCancel),
+                  ),
+                ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── App Bar ──────────────────────────────────────────────────
+
+  Widget _buildAppBar() {
+    return Container(
+      color: _c.bg,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Row(
+        children: [
+          Text(
+            'KINETIC_DRIVE',
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: _c.primary,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const Spacer(),
+          Icon(Icons.settings_outlined, color: _c.onSurfaceVariant),
         ],
       ),
-      body: Column(
-        children: [
-          // ── Bannière statut ────────────────────────────────────
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: statusColor.withValues(alpha: 0.1),
-            child: Row(
-              children: [
-                Icon(statusInfo['icon'] as IconData,
-                    color: statusColor, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        statusInfo['text'] as String,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: statusColor,
-                        ),
-                      ),
-                      if (statusInfo['showTimer'] == true)
-                        _ElapsedTimer(
-                          startTime: ride.status == RideStatus.started
-                              ? (ride.startedAt ?? ride.requestedAt)
-                              : ride.requestedAt,
-                        ),
-                    ],
-                  ),
-                ),
-                // Indicateur stream actif
-                if (rideState.isWatching)
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-              ],
-            ),
-          ),
+    );
+  }
 
-          // ── Carte ──────────────────────────────────────────────
-          Expanded(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: LatLng(
-                  ride.pickup.latitude,
-                  ride.pickup.longitude,
-                ),
-                initialZoom: 14,
+  // ── Full-screen Map ──────────────────────────────────────────
+
+  Widget _buildMap(Ride ride, String tileUrl) {
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: LatLng(ride.pickup.latitude, ride.pickup.longitude),
+        initialZoom: 14,
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: tileUrl,
+          subdomains: const ['a', 'b', 'c', 'd'],
+        ),
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: LatLng(ride.pickup.latitude, ride.pickup.longitude),
+              width: 36,
+              height: 36,
+              child: Container(
+                color: _c.primary,
+                child: Icon(Icons.location_on,
+                    color: _c.onPrimary, size: 22),
               ),
+            ),
+            Marker(
+              point:
+                  LatLng(ride.destination.latitude, ride.destination.longitude),
+              width: 36,
+              height: 36,
+              child: Container(
+                color: _c.onSurface,
+                child: Icon(Icons.flag, color: _c.bg, size: 22),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Status Banner ────────────────────────────────────────────
+
+  Widget _buildStatusBanner({
+    required Map<String, dynamic> statusInfo,
+    required bool isWatching,
+    required bool showTimer,
+    required DateTime timerStart,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _c.surfaceTop.withValues(alpha: 0.88),
+        border: Border(left: BorderSide(color: _c.primary, width: 4)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                ),
-                MarkerLayer(
-                  markers: [
-                    // Pickup
-                    Marker(
-                      point: LatLng(
-                        ride.pickup.latitude,
-                        ride.pickup.longitude,
-                      ),
-                      width: 40,
-                      height: 40,
-                      child: const Icon(
-                        Icons.location_on,
-                        color: Colors.green,
-                        size: 40,
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _c.primary,
+                        shape: BoxShape.circle,
                       ),
                     ),
-                    // Destination
-                    Marker(
-                      point: LatLng(
-                        ride.destination.latitude,
-                        ride.destination.longitude,
-                      ),
-                      width: 40,
-                      height: 40,
-                      child: const Icon(
-                        Icons.flag,
-                        color: Colors.red,
-                        size: 40,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        statusInfo['label'] as String,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _c.primary,
+                          letterSpacing: 2,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  statusInfo['text'] as String,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: _c.onSurface,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                if (showTimer) ...[
+                  const SizedBox(height: 4),
+                  _ElapsedTimer(startTime: timerStart, color: _c.primary),
+                ],
               ],
             ),
           ),
-
-          // ── Infos course ───────────────────────────────────────
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Chauffeur info si assigné
-                if (ride.hasDriver) ...[
-                  Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 24,
-                        child: Icon(Icons.person),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              ride.driverName ?? 'Chauffeur',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            if (ride.driverPhone != null)
-                              Text(
-                                ride.driverPhone!,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 13,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      if (ride.driverPhone != null)
-                        IconButton(
-                          icon: const Icon(Icons.phone, color: Colors.green),
-                          onPressed: () => launchUrl(
-                              Uri.parse('tel:${ride.driverPhone}')),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Divider(),
-                  const SizedBox(height: 8),
-                ],
-
-                // Tarif estimé
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Tarif estimé',
-                        style: TextStyle(color: Colors.grey)),
-                    Text(
-                      '${ride.finalFare?.toStringAsFixed(0) ?? ride.estimatedFare.toStringAsFixed(0)} FDJ',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            width: 40,
+            height: 40,
+            color: _c.surfaceTop,
+            child: Icon(
+              isWatching
+                  ? Icons.notifications_active
+                  : Icons.notifications_outlined,
+              color: _c.onSurfaceVariant,
+              size: 20,
             ),
           ),
         ],
@@ -454,23 +474,272 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen>
     );
   }
 
+  // ── Side Buttons ─────────────────────────────────────────────
+
+  Widget _buildSideActions() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _sideBtn(Icons.my_location),
+        const SizedBox(height: 8),
+        _sideBtn(Icons.layers_outlined),
+      ],
+    );
+  }
+
+  Widget _sideBtn(IconData icon) {
+    return Container(
+      width: 48,
+      height: 48,
+      color: _c.surfaceTop.withValues(alpha: 0.88),
+      child: Icon(icon, color: _c.onSurface, size: 22),
+    );
+  }
+
+  // ── Bottom Control Panel ─────────────────────────────────────
+
+  Widget _buildBottomPanel(Ride ride, bool canCancel) {
+    final fare = ride.finalFare?.toStringAsFixed(0) ??
+        ride.estimatedFare.toStringAsFixed(0);
+
+    return Container(
+      color: _c.surfaceLow,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Driver info row
+          Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                color: _c.surfaceTop,
+                child: ride.driverPhotoUrl != null &&
+                        ride.driverPhotoUrl!.isNotEmpty
+                    ? Image.network(
+                        ride.driverPhotoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Icon(
+                            Icons.person,
+                            color: _c.onSurfaceVariant,
+                            size: 32),
+                      )
+                    : Icon(Icons.person,
+                        color: _c.onSurfaceVariant, size: 32),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Commandant de bord',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: _c.onSurfaceVariant,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    Text(
+                      (ride.driverName ?? 'EN ATTENTE').toUpperCase(),
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: _c.onSurface,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Tarif estimé',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: _c.onSurfaceVariant,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  Text(
+                    '$fare FDJ',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: _c.primary,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // Phone + Call button (shown when driver assigned)
+          if (ride.hasDriver) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    color: _c.surfaceTop,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        Icon(Icons.phone_outlined,
+                            color: _c.onSurfaceVariant, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            ride.driverPhone ?? '---',
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _c.onSurface,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (ride.driverPhone != null) {
+                        launchUrl(Uri.parse('tel:${ride.driverPhone}'));
+                      }
+                    },
+                    child: Container(
+                      color: _c.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Center(
+                        child: Text(
+                          'APPELER',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: _c.onPrimary,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          // Status strip + cancel
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                color: _c.primary.withValues(alpha: 0.1),
+                child: Text(
+                  'SYSTEM_STABLE',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: _c.primary,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                color: _c.surfaceTop,
+                child: Text(
+                  'EN_ROUTE',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: _c.onSurfaceVariant,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              if (canCancel)
+                GestureDetector(
+                  onTap: _cancelRide,
+                  child: Text(
+                    'ANNULER',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: _c.error,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Error Screen ─────────────────────────────────────────────
+
   Widget _buildErrorScreen(String error) {
     return Scaffold(
+      backgroundColor: _c.bg,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              Icon(Icons.error_outline, size: 48, color: _c.error),
               const SizedBox(height: 16),
-              Text('Erreur: $error',
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () =>
+              Text(
+                'ERREUR_SYSTÈME',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _c.error,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(color: _c.onSurfaceVariant, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: () =>
                     Navigator.of(context).popUntil((r) => r.isFirst),
-                child: const Text('Retour à l\'accueil'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 16),
+                  color: _c.primary,
+                  child: Text(
+                    'RETOUR',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                      color: _c.onPrimary,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -480,9 +749,15 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen>
   }
 }
 
+// ════════════════════════════════════════════════════════════
+// ELAPSED TIMER
+// ════════════════════════════════════════════════════════════
+
 class _ElapsedTimer extends StatefulWidget {
   final DateTime startTime;
-  const _ElapsedTimer({required this.startTime});
+  final Color    color;
+  const _ElapsedTimer({required this.startTime, required this.color});
+
   @override
   State<_ElapsedTimer> createState() => _ElapsedTimerState();
 }
@@ -512,6 +787,14 @@ class _ElapsedTimerState extends State<_ElapsedTimer> {
         : diff.inHours < 1
             ? '${diff.inMinutes}min'
             : '${diff.inHours}h ${diff.inMinutes.remainder(60)}min';
-    return Text('Temps: $text', style: const TextStyle(fontSize: 13));
+    return Text(
+      text,
+      style: GoogleFonts.spaceGrotesk(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: widget.color,
+        letterSpacing: 1,
+      ),
+    );
   }
 }

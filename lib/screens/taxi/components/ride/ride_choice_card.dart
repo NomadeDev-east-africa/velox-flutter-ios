@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nomade_client/models/ride_choice.dart';
 import 'package:nomade_client/constants.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 
 /// Card pour un choix de véhicule – Design horizontal compact (style Uber/Bolt)
 /// Utilisé dans TaxiHomeScreen pour la sélection de véhicule
@@ -9,6 +10,7 @@ class RideChoiceCard extends StatelessWidget {
     super.key,
     required this.ride,
     required this.onTap,
+    required this.c,
     this.distance = 0.0,
     this.isSelected = false,
   });
@@ -17,6 +19,7 @@ class RideChoiceCard extends StatelessWidget {
   final double distance; // 0 si pas de destination (affiche prix de base)
   final VoidCallback onTap;
   final bool isSelected;
+  final AppColors c;
 
   @override
   Widget build(BuildContext context) {
@@ -37,8 +40,8 @@ class RideChoiceCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           )
-              : const LinearGradient(
-            colors: [blanc, Color(0xFFFAFAFA)],
+              : LinearGradient(
+            colors: [c.surfaceLow, c.surface],
           ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
@@ -50,7 +53,7 @@ class RideChoiceCard extends StatelessWidget {
           ],
           border: isSelected
               ? null
-              : Border.all(color: Colors.grey.shade200),
+              : Border.all(color: c.outlineVariant),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -97,7 +100,7 @@ class RideChoiceCard extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: isSelected ? blanc : textePrincipal,
+                color: isSelected ? blanc : c.onSurface,
               ),
             ),
             const SizedBox(height: 3),

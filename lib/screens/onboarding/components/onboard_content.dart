@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-const _onSurface        = Color(0xFFFFFFFF);
-const _onSurfaceVariant = Color(0xFFADAAAA);
+import 'package:nomade_client/theme/app_colors.dart';
 
 class OnboardContent extends StatelessWidget {
   const OnboardContent({
@@ -11,9 +9,11 @@ class OnboardContent extends StatelessWidget {
     required this.illustration,
     required this.title,
     required this.text,
+    required this.c,
   });
 
   final String? illustration, title, text;
+  final AppColors c;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,7 @@ class OnboardContent extends StatelessWidget {
           Text(
             title!,
             style: GoogleFonts.poppins(
-              color: _onSurface,
+              color: c.onSurface,
               fontWeight: FontWeight.w700,
               fontSize: 24,
               letterSpacing: -0.5,
@@ -43,7 +43,7 @@ class OnboardContent extends StatelessWidget {
           Text(
             text!,
             style: GoogleFonts.inter(
-              color: _onSurfaceVariant,
+              color: c.onSurfaceVariant,
               height: 1.6,
               fontSize: 15,
             ),

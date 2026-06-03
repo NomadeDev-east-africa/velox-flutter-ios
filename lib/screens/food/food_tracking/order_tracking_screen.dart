@@ -5,20 +5,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nomade_client/models/order.dart';
 import 'package:nomade_client/providers/all_providers.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 import 'order_completed_screen.dart';
 import 'track_delivery_screen.dart';
-
-// ── Kinetic Monolith palette ──────────────────────────────────────────────────
-const _bg         = Color(0xFF0E0E0E);
-const _surfaceLow = Color(0xFF131313);
-const _surface    = Color(0xFF1A1919);
-const _surfaceHigh= Color(0xFF20201F);
-const _primary    = Color(0xFF9FFF88);
-const _onPrimary  = Color(0xFF026400);
-const _onSurface  = Color(0xFFFFFFFF);
-const _onVariant  = Color(0xFFADAAAA);
-const _outline    = Color(0xFF484847);
-const _error      = Color(0xFFFF7351);
 
 class OrderTrackingScreen extends ConsumerStatefulWidget {
   final String? orderId;
@@ -29,10 +18,12 @@ class OrderTrackingScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
+  // Couleurs courantes — mises à jour à chaque build
+  late AppColors _c;
+
   bool   _attachTriggered = false;
   Order? _completedOrder;
 
-  // ── Timer d'annulation (2 minutes) ───────────────────────────────────────
   Timer? _cancelTimer;
   int    _cancelSecondsLeft  = 120;
   bool   _cancelTimerStarted = false;
@@ -100,27 +91,28 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       '#${orderId.substring(0, 8).toUpperCase()}';
 
   Future<void> _showExitDialog() async {
+    final c = _c;
     final navigator = Navigator.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _surface,
+        backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        title: const Text('Quitter le suivi ?',
-            style: TextStyle(color: _onSurface, fontWeight: FontWeight.bold)),
-        content: const Text(
+        title: Text('Quitter le suivi ?',
+            style: TextStyle(color: c.onSurface, fontWeight: FontWeight.bold)),
+        content: Text(
           'Votre commande continue d\'être préparée. '
           'Vous pouvez revenir suivre sa progression.',
-          style: TextStyle(color: _onVariant),
+          style: TextStyle(color: c.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Rester', style: TextStyle(color: _primary)),
+            child: Text('Rester', style: TextStyle(color: c.primary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Quitter', style: TextStyle(color: _onVariant)),
+            child: Text('Quitter', style: TextStyle(color: c.onSurfaceVariant)),
           ),
         ],
       ),
@@ -132,12 +124,14 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    _c = isDark ? AppColors.dark : AppColors.light;
     final orderState = ref.watch(activeOrderProvider);
 
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: _bg,
+        backgroundColor: _c.bg,
         appBar: _buildAppBar(orderState.order),
         body: _buildBody(orderState),
       ),
@@ -146,14 +140,14 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   PreferredSizeWidget _buildAppBar(Order? order) {
     return AppBar(
-      backgroundColor: _bg,
+      backgroundColor: _c.bg,
       elevation: 0,
       automaticallyImplyLeading: false,
       leading: IconButton(
-        icon: const Icon(Icons.menu, color: _primary),
+        icon: Icon(Icons.menu, color: _c.primary),
         onPressed: () {},
       ),
-      title: Image.asset('assets/images/logo_velox.webp', height: 36, fit: BoxFit.contain),
+      title: Image.asset('assets/images/logo-velox.png', height: 36, fit: BoxFit.contain),
       centerTitle: true,
       actions: [
         Container(
@@ -161,13 +155,13 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: _surfaceHigh,
+            color: _c.surfaceHigh,
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: _outline.withValues(alpha: 0.3)),
+            border: Border.all(color: _c.outlineVariant.withValues(alpha: 0.3)),
           ),
           child: IconButton(
             padding: EdgeInsets.zero,
-            icon: const Icon(Icons.close, color: _onVariant, size: 18),
+            icon: Icon(Icons.close, color: _c.onSurfaceVariant, size: 18),
             onPressed: _showExitDialog,
           ),
         ),
@@ -183,7 +177,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       _completedOrder = orderState.order;
     }
 
-    // Loading
     if (orderState.isLoading ||
         (widget.orderId != null &&
             orderState.order == null &&
@@ -192,19 +185,16 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       return _buildLoadingView();
     }
 
-    // Erreur
     if (orderState.error != null &&
         orderState.order == null &&
         _completedOrder == null) {
       return _buildErrorView(orderState.error!);
     }
 
-    // Commande terminée (en cache) → bouton confirmer
     if (orderState.order == null && _completedOrder != null) {
       return _buildMainContent(_completedOrder!, isCompletedCache: true);
     }
 
-    // État terminal réel
     if (orderState.order == null && _attachTriggered) {
       return _buildTerminalView();
     }
@@ -223,7 +213,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     bool isWatching = false,
     bool isCompletedCache = false,
   }) {
-    // Démarrer le timer d'annulation dès que la commande est annulable
     if (order.canBeCancelled && !_cancelTimerStarted) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (mounted) _startCancelTimer();
@@ -252,7 +241,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             ),
           ),
         ),
-        // CTA Buttons
         _buildBottomActions(order, isCompletedCache: isCompletedCache),
       ],
     );
@@ -262,40 +250,35 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   Widget _buildPageHeader(Order order, {required bool isDelivering}) {
     if (!isDelivering) {
-      // Design 1 : CURRENT OPERATION + big title + SESSION ID
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left green accent bar + title block
             IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: 3,
-                    decoration: const BoxDecoration(color: _primary),
-                  ),
+                  Container(width: 3, color: _c.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'CURRENT OPERATION',
                           style: TextStyle(
-                            color: _onVariant,
+                            color: _c.onSurfaceVariant,
                             fontSize: 11,
                             letterSpacing: 2,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'SUIVI DE\nCOMMANDE',
                           style: TextStyle(
-                            color: _onSurface,
+                            color: _c.onSurface,
                             fontSize: 32,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -1,
@@ -315,10 +298,10 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text(
+                    Text(
                       'SESSION ID',
                       style: TextStyle(
-                        color: _onVariant,
+                        color: _c.onSurfaceVariant,
                         fontSize: 10,
                         letterSpacing: 1.5,
                         fontWeight: FontWeight.w600,
@@ -326,8 +309,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                     ),
                     Text(
                       _sessionId(order.id),
-                      style: const TextStyle(
-                        color: _primary,
+                      style: TextStyle(
+                        color: _c.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
@@ -342,16 +325,15 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       );
     }
 
-    // Design 2 : Big title + two-column info
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'SUIVI DE COMMANDE',
             style: TextStyle(
-              color: _onSurface,
+              color: _c.onSurface,
               fontSize: 28,
               fontWeight: FontWeight.w900,
               letterSpacing: -1,
@@ -376,8 +358,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: _onVariant,
+          style: TextStyle(
+            color: _c.onSurfaceVariant,
             fontSize: 10,
             letterSpacing: 1.5,
             fontWeight: FontWeight.w600,
@@ -387,12 +369,12 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         IntrinsicHeight(
           child: Row(
             children: [
-              Container(width: 2, color: _primary),
+              Container(width: 2, color: _c.primary),
               const SizedBox(width: 6),
               Text(
                 value,
-                style: const TextStyle(
-                  color: _onSurface,
+                style: TextStyle(
+                  color: _c.onSurface,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -415,48 +397,45 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       margin: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       height: isDelivering ? 200 : 140,
       decoration: BoxDecoration(
-        color: _surfaceLow,
+        color: _c.surfaceLow,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: _outline.withValues(alpha: 0.2)),
+        border: Border.all(color: _c.outlineVariant.withValues(alpha: 0.2)),
       ),
       clipBehavior: Clip.hardEdge,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Subtle grid pattern
-          CustomPaint(painter: _GridPainter()),
-          // Center icon
+          CustomPaint(painter: _GridPainter(_c.primary)),
           Center(
             child: Icon(
               isDelivering ? Icons.delivery_dining : Icons.map_outlined,
-              color: _primary.withValues(alpha: 0.15),
+              color: _c.primary.withValues(alpha: 0.15),
               size: 64,
             ),
           ),
-          // Status chip top-right
           Positioned(
             top: 10,
             right: 10,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: _surfaceHigh,
-                border: Border.all(color: _primary.withValues(alpha: 0.5)),
+                color: _c.surfaceHigh,
+                border: Border.all(color: _c.primary.withValues(alpha: 0.5)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     width: 6, height: 6,
-                    decoration: const BoxDecoration(
-                      color: _primary, shape: BoxShape.circle,
+                    decoration: BoxDecoration(
+                      color: _c.primary, shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 5),
                   Text(
                     isDelivering ? 'LIVE TELEMETRY ACTIVE' : 'SIGNAL: OPTIMAL',
-                    style: const TextStyle(
-                      color: _primary,
+                    style: TextStyle(
+                      color: _c.primary,
                       fontSize: 9,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.2,
@@ -475,31 +454,11 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   Widget _buildStepper(Order order) {
     final steps = [
-      _StepData(
-        label: 'Confirmée',
-        subLabel: 'Order validated by system',
-        subLabelDelivering: 'Order received by system',
-      ),
-      _StepData(
-        label: 'Préparation',
-        subLabel: 'Chef is assembling your order',
-        subLabelDelivering: 'Chef is currently processing the order',
-      ),
-      _StepData(
-        label: 'Prête',
-        subLabel: 'Awaiting pick-up',
-        subLabelDelivering: 'Packaging completed. Awaiting pick-up',
-      ),
-      _StepData(
-        label: 'En livraison',
-        subLabel: 'En route vers vous',
-        subLabelDelivering: 'Driver is on the way to your location',
-      ),
-      _StepData(
-        label: 'Livrée',
-        subLabel: '',
-        subLabelDelivering: '',
-      ),
+      _StepData(label: 'Confirmée',    subLabel: 'Order validated by system',          subLabelDelivering: 'Order received by system'),
+      _StepData(label: 'Préparation',  subLabel: 'Chef is assembling your order',      subLabelDelivering: 'Chef is currently processing the order'),
+      _StepData(label: 'Prête',        subLabel: 'Awaiting pick-up',                   subLabelDelivering: 'Packaging completed. Awaiting pick-up'),
+      _StepData(label: 'En livraison', subLabel: 'En route vers vous',                 subLabelDelivering: 'Driver is on the way to your location'),
+      _StepData(label: 'Livrée',       subLabel: '',                                   subLabelDelivering: ''),
     ];
 
     final currentIndex  = _getCurrentStepIndex(order.status);
@@ -511,16 +470,16 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _surfaceLow,
-          border: Border.all(color: _outline.withValues(alpha: 0.15)),
+          color: _c.surfaceLow,
+          border: Border.all(color: _c.outlineVariant.withValues(alpha: 0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'PROCESS STATUS',
               style: TextStyle(
-                color: _onVariant,
+                color: _c.onSurfaceVariant,
                 fontSize: 10,
                 letterSpacing: 2,
                 fontWeight: FontWeight.w600,
@@ -541,7 +500,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Left column: checkbox + vertical line
                   Column(
                     children: [
                       _buildStepIcon(isDone: isDone, isCurrent: isCurrent),
@@ -549,12 +507,13 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                         Container(
                           width: 2,
                           height: 36,
-                          color: isDone ? _primary : _outline.withValues(alpha: 0.3),
+                          color: isDone
+                              ? _c.primary
+                              : _c.outlineVariant.withValues(alpha: 0.3),
                         ),
                     ],
                   ),
                   const SizedBox(width: 14),
-                  // Right column: label + sublabel + voir livreur
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
@@ -568,10 +527,10 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                                   step.label.toUpperCase(),
                                   style: TextStyle(
                                     color: isCurrent
-                                        ? _primary
+                                        ? _c.primary
                                         : isDone
-                                            ? _onSurface
-                                            : _outline,
+                                            ? _c.onSurface
+                                            : _c.outlineVariant,
                                     fontSize: 13,
                                     fontWeight: isCurrent || isDone
                                         ? FontWeight.w800
@@ -597,12 +556,13 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 10, vertical: 5),
                                     decoration: BoxDecoration(
-                                      border: Border.all(color: _onSurface.withValues(alpha: 0.5)),
+                                      border: Border.all(
+                                          color: _c.onSurface.withValues(alpha: 0.5)),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'VOIR LIVREUR',
                                       style: TextStyle(
-                                        color: _onSurface,
+                                        color: _c.onSurface,
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 1,
@@ -613,13 +573,18 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                             ],
                           ),
                           if ((isCurrent || isDone) &&
-                              (isDelivering ? step.subLabelDelivering : step.subLabel).isNotEmpty)
+                              (isDelivering
+                                      ? step.subLabelDelivering
+                                      : step.subLabel)
+                                  .isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(
-                                isDelivering ? step.subLabelDelivering : step.subLabel,
+                                isDelivering
+                                    ? step.subLabelDelivering
+                                    : step.subLabel,
                                 style: TextStyle(
-                                  color: _onVariant.withValues(alpha: 0.7),
+                                  color: _c.onSurfaceVariant.withValues(alpha: 0.7),
                                   fontSize: 11,
                                 ),
                               ),
@@ -642,28 +607,21 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       width: 22,
       height: 22,
       decoration: BoxDecoration(
-        color: isDone
-            ? _primary
-            : isCurrent
-                ? Colors.transparent
-                : Colors.transparent,
+        color: Colors.transparent,
         border: Border.all(
-          color: isDone || isCurrent ? _primary : _outline,
+          color: isDone || isCurrent ? _c.primary : _c.outlineVariant,
           width: 1.5,
         ),
       ),
       child: isDone
-          ? const Icon(Icons.check, color: _onPrimary, size: 14)
+          ? Icon(Icons.check, color: _c.onPrimary, size: 14)
           : isCurrent
-              ? Container(
-                  margin: const EdgeInsets.all(4),
-                  color: _primary,
-                )
+              ? Container(margin: const EdgeInsets.all(4), color: _c.primary)
               : null,
     );
   }
 
-  // ── PROVIDER (design 1 — non-delivering) ─────────────────────────────────
+  // ── PROVIDER (non-delivering) ─────────────────────────────────────────────
 
   Widget _buildProviderOrDetails(Order order, {required bool isDelivering}) {
     if (isDelivering) return const SizedBox.shrink();
@@ -672,8 +630,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _surfaceLow,
-          border: Border.all(color: _outline.withValues(alpha: 0.15)),
+          color: _c.surfaceLow,
+          border: Border.all(color: _c.outlineVariant.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
@@ -681,19 +639,19 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: _surfaceHigh,
+                color: _c.surfaceHigh,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Icon(Icons.restaurant, color: _onVariant, size: 22),
+              child: Icon(Icons.restaurant, color: _c.onSurfaceVariant, size: 22),
             ),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'PROVIDER',
                   style: TextStyle(
-                    color: _onVariant,
+                    color: _c.onSurfaceVariant,
                     fontSize: 10,
                     letterSpacing: 1.5,
                     fontWeight: FontWeight.w600,
@@ -702,8 +660,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 const SizedBox(height: 2),
                 Text(
                   order.restaurantName.toUpperCase(),
-                  style: const TextStyle(
-                    color: _onSurface,
+                  style: TextStyle(
+                    color: _c.onSurface,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
@@ -717,7 +675,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     );
   }
 
-  // ── MANIFEST (design 1 — non-delivering) ─────────────────────────────────
+  // ── MANIFEST (non-delivering) ─────────────────────────────────────────────
 
   Widget _buildManifest(Order order) {
     return Padding(
@@ -725,10 +683,10 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'MANIFEST CONTENT',
             style: TextStyle(
-              color: _onVariant,
+              color: _c.onSurfaceVariant,
               fontSize: 10,
               letterSpacing: 2,
               fontWeight: FontWeight.w600,
@@ -741,12 +699,12 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   children: [
                     Text(
                       '${item.quantity}x  ${item.name.toUpperCase()}',
-                      style: const TextStyle(color: _onSurface, fontSize: 13),
+                      style: TextStyle(color: _c.onSurface, fontSize: 13),
                     ),
                     const Spacer(),
                     Text(
                       '${item.totalPrice} FDJ',
-                      style: const TextStyle(color: _onSurface, fontSize: 13),
+                      style: TextStyle(color: _c.onSurface, fontSize: 13),
                     ),
                   ],
                 ),
@@ -755,21 +713,21 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                const Text('LIVRAISON',
-                    style: TextStyle(color: _onVariant, fontSize: 13)),
+                Text('LIVRAISON',
+                    style: TextStyle(color: _c.onSurfaceVariant, fontSize: 13)),
                 const Spacer(),
                 Text('${order.deliveryFee} FDJ',
-                    style: const TextStyle(color: _onVariant, fontSize: 13)),
+                    style: TextStyle(color: _c.onSurfaceVariant, fontSize: 13)),
               ],
             ),
           ),
-          Divider(color: _outline.withValues(alpha: 0.3), height: 20),
+          Divider(color: _c.outlineVariant.withValues(alpha: 0.3), height: 20),
           Row(
             children: [
-              const Text(
+              Text(
                 'TOTAL PAYLOAD',
                 style: TextStyle(
-                  color: _onVariant,
+                  color: _c.onSurfaceVariant,
                   fontSize: 11,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w600,
@@ -778,8 +736,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               const Spacer(),
               Text(
                 '${order.total} FDJ',
-                style: const TextStyle(
-                  color: _primary,
+                style: TextStyle(
+                  color: _c.primary,
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
@@ -792,7 +750,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
             child: Text(
               'AUTHORIZED COMMAND ONLY · REF ${_sessionId(order.id)}',
               style: TextStyle(
-                color: _onVariant.withValues(alpha: 0.4),
+                color: _c.onSurfaceVariant.withValues(alpha: 0.4),
                 fontSize: 9,
                 letterSpacing: 1.5,
               ),
@@ -803,7 +761,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     );
   }
 
-  // ── DETAILS CARD (design 2 — delivering) ─────────────────────────────────
+  // ── DETAILS CARD (delivering) ─────────────────────────────────────────────
 
   Widget _buildDetailsCard(Order order) {
     return Padding(
@@ -811,16 +769,16 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _surfaceLow,
-          border: Border.all(color: _outline.withValues(alpha: 0.15)),
+          color: _c.surfaceLow,
+          border: Border.all(color: _c.outlineVariant.withValues(alpha: 0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'DÉTAILS DE LA COMMANDE',
               style: TextStyle(
-                color: _onVariant,
+                color: _c.onSurfaceVariant,
                 fontSize: 10,
                 letterSpacing: 1.8,
                 fontWeight: FontWeight.w600,
@@ -832,10 +790,10 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                   child: Row(
                     children: [
                       Text('${item.quantity}x ${item.name.toLowerCase()}',
-                          style: const TextStyle(color: _onSurface, fontSize: 13)),
+                          style: TextStyle(color: _c.onSurface, fontSize: 13)),
                       const Spacer(),
                       Text('${item.totalPrice}  FDJ',
-                          style: const TextStyle(color: _onSurface, fontSize: 13)),
+                          style: TextStyle(color: _c.onSurface, fontSize: 13)),
                     ],
                   ),
                 )),
@@ -843,21 +801,21 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(
                 children: [
-                  const Text('Livraison',
-                      style: TextStyle(color: _onVariant, fontSize: 13)),
+                  Text('Livraison',
+                      style: TextStyle(color: _c.onSurfaceVariant, fontSize: 13)),
                   const Spacer(),
                   Text('${order.deliveryFee}  FDJ',
-                      style: const TextStyle(color: _onVariant, fontSize: 13)),
+                      style: TextStyle(color: _c.onSurfaceVariant, fontSize: 13)),
                 ],
               ),
             ),
-            Divider(color: _outline.withValues(alpha: 0.3), height: 20),
+            Divider(color: _c.outlineVariant.withValues(alpha: 0.3), height: 20),
             Row(
               children: [
-                const Text(
+                Text(
                   'TOTAL',
                   style: TextStyle(
-                    color: _onSurface,
+                    color: _c.onSurface,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
@@ -866,8 +824,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 const Spacer(),
                 Text(
                   '${order.total} FDJ',
-                  style: const TextStyle(
-                    color: _primary,
+                  style: TextStyle(
+                    color: _c.primary,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                   ),
@@ -884,12 +842,11 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   Widget _buildBottomActions(Order order, {bool isCompletedCache = false}) {
     return Container(
-      color: _bg,
+      color: _c.bg,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Confirmer livraison
           if (order.status == Order.statusCompleted || isCompletedCache)
             GestureDetector(
               onTap: () => Navigator.pushReplacement(
@@ -902,17 +859,17 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               child: Container(
                 width: double.infinity,
                 height: 54,
-                color: _primary,
+                color: _c.primary,
                 alignment: Alignment.center,
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle, color: _onPrimary, size: 18),
-                    SizedBox(width: 8),
+                    Icon(Icons.check_circle, color: _c.onPrimary, size: 18),
+                    const SizedBox(width: 8),
                     Text(
                       'CONFIRMER LA LIVRAISON',
                       style: TextStyle(
-                        color: _onPrimary,
+                        color: _c.onPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.2,
@@ -923,31 +880,29 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
               ),
             ),
 
-          // Annuler la commande (fenêtre de 2 minutes)
           if (order.canBeCancelled && _cancelSecondsLeft > 0) ...[
             if (order.status == Order.statusCompleted || isCompletedCache)
               const SizedBox(height: 10),
-            // Countdown bar
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              color: _surfaceLow,
+              color: _c.surfaceLow,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.timer_outlined, color: _onVariant, size: 14),
+                  Icon(Icons.timer_outlined, color: _c.onSurfaceVariant, size: 14),
                   const SizedBox(width: 6),
                   Text(
                     'Annulation possible encore ',
                     style: TextStyle(
-                      color: _onVariant.withValues(alpha: 0.7),
+                      color: _c.onSurfaceVariant.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
                   ),
                   Text(
                     _formatCountdown(_cancelSecondsLeft),
-                    style: const TextStyle(
-                      color: _error,
+                    style: TextStyle(
+                      color: _c.error,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1,
@@ -963,14 +918,14 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
                 width: double.infinity,
                 height: 54,
                 decoration: BoxDecoration(
-                  color: _error.withValues(alpha: 0.05),
-                  border: Border.all(color: _error.withValues(alpha: 0.6)),
+                  color: _c.error.withValues(alpha: 0.05),
+                  border: Border.all(color: _c.error.withValues(alpha: 0.6)),
                 ),
                 alignment: Alignment.center,
-                child: const Text(
+                child: Text(
                   'ANNULER LA COMMANDE',
                   style: TextStyle(
-                    color: _error,
+                    color: _c.error,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
@@ -985,24 +940,25 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   }
 
   Future<void> _confirmCancel() async {
+    final c = _c;
     final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _surface,
+        backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        title: const Text('Annuler la commande ?',
-            style: TextStyle(color: _onSurface, fontWeight: FontWeight.bold)),
-        content: const Text('Cette action est irréversible.',
-            style: TextStyle(color: _onVariant)),
+        title: Text('Annuler la commande ?',
+            style: TextStyle(color: c.onSurface, fontWeight: FontWeight.bold)),
+        content: Text('Cette action est irréversible.',
+            style: TextStyle(color: c.onSurfaceVariant)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Non', style: TextStyle(color: _primary)),
+            child: Text('Non', style: TextStyle(color: c.primary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Oui, annuler', style: TextStyle(color: _error)),
+            child: Text('Oui, annuler', style: TextStyle(color: c.error)),
           ),
         ],
       ),
@@ -1025,14 +981,14 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   // ── STATES ────────────────────────────────────────────────────────────────
 
   Widget _buildLoadingView() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(color: _primary, strokeWidth: 2),
-          SizedBox(height: 16),
+          CircularProgressIndicator(color: _c.primary, strokeWidth: 2),
+          const SizedBox(height: 16),
           Text('Chargement de votre commande...',
-              style: TextStyle(color: _onVariant, fontSize: 13)),
+              style: TextStyle(color: _c.onSurfaceVariant, fontSize: 13)),
         ],
       ),
     );
@@ -1045,14 +1001,14 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         children: [
           Container(
             width: 64, height: 64,
-            color: _primary.withValues(alpha: 0.1),
-            child: const Icon(Icons.check, color: _primary, size: 36),
+            color: _c.primary.withValues(alpha: 0.1),
+            child: Icon(Icons.check, color: _c.primary, size: 36),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'COMMANDE TERMINÉE',
             style: TextStyle(
-              color: _onSurface,
+              color: _c.onSurface,
               fontSize: 16,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
@@ -1070,21 +1026,21 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: _error),
+            Icon(Icons.error_outline, size: 48, color: _c.error),
             const SizedBox(height: 16),
             Text('Erreur: $error',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: _onVariant)),
+                style: TextStyle(color: _c.onSurfaceVariant)),
             const SizedBox(height: 16),
             GestureDetector(
               onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                color: _primary,
-                child: const Text(
+                color: _c.primary,
+                child: Text(
                   'RETOUR À L\'ACCUEIL',
                   style: TextStyle(
-                    color: _onPrimary,
+                    color: _c.onPrimary,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                   ),
@@ -1114,10 +1070,13 @@ class _StepData {
 // ── Painter grille map ────────────────────────────────────────────────────────
 
 class _GridPainter extends CustomPainter {
+  final Color color;
+  const _GridPainter(this.color);
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF9FFF88).withValues(alpha: 0.04)
+      ..color = color.withValues(alpha: 0.04)
       ..strokeWidth = 0.5;
 
     const step = 24.0;
@@ -1130,5 +1089,5 @@ class _GridPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GridPainter old) => false;
+  bool shouldRepaint(_GridPainter old) => old.color != color;
 }

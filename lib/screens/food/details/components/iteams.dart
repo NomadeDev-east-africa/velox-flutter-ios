@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../components/cards/iteam_card.dart';
+import '../../../../components/cards/item_card.dart';
 import '../../../../constants.dart';
 import '../../addToOrder/add_to_order_screen.dart';
 import '../../../../services/menu_service.dart';

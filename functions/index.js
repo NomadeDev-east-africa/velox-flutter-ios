@@ -18,7 +18,8 @@ const OFFER_TIMEOUT_SECONDS     = 30;
 const RIDE_MAX_AGE_MINUTES      = 30;
 const HEARTBEAT_TIMEOUT_MINUTES = 2;   // Driver considéré mort après 2 min sans heartbeat
 const STUCK_RIDE_TIMEOUTS = {
-  accepted: 30,   // 30 min sans démarrer → annulé
+  accepted: 30,   // 30 min sans transition → annulé
+  arriving: 20,   // 20 min en transit vers le client → annulé
   arrived:  15,   // 15 min sans démarrer → annulé
   started:  180,  // 3h de course → annulé
 };
@@ -50,7 +51,7 @@ async function driverHasActiveRide(driverId) {
   const activeRide = await getFirestore()
     .collection("taxiRides")
     .where("driverId", "==", driverId)
-    .where("status", "in", ["accepted", "arrived", "started"])
+    .where("status", "in", ["accepted", "arriving", "arrived", "started"])
     .limit(1)
     .get();
   return !activeRide.empty;
@@ -124,6 +125,101 @@ function nextOfferExpiry() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// UTILITAIRE : Assigner un driver à une course
+// Partagé par onTaxiRideCreated et cleanupExpiredOffers
+// En cas d'erreur, met le statut à "no_driver_available"
+// pour éviter les rides bloquées à "requested" indéfiniment.
+// ─────────────────────────────────────────────────────────────
+async function assignDriverToRide(db, rideRef, rideId, ride) {
+  const pickupLat = ride.pickup?.latitude;
+  const pickupLng = ride.pickup?.longitude;
+  if (!pickupLat || !pickupLng) {
+    console.error(`❌ [assignDriver] Coordonnées pickup manquantes: ${rideId}`);
+    return;
+  }
+
+  try {
+    const heartbeatLimit = new Date(Date.now() - HEARTBEAT_TIMEOUT_MINUTES * 60 * 1000);
+
+    const driversSnap = await db
+      .collection("drivers")
+      .where("isOnline",      "==", true)
+      .where("isAvailable",   "==", true)
+      .where("lastHeartbeat", ">=", heartbeatLimit)
+      .get();
+
+    console.log(`  [assignDriver] ${rideId} — drivers vivants: ${driversSnap.size}`);
+
+    if (driversSnap.empty) {
+      console.warn(`⚠️ [assignDriver] ${rideId}: aucun driver vivant`);
+      await rideRef.update({ status: "no_driver_available", updatedAt: FieldValue.serverTimestamp() });
+      return;
+    }
+
+    const candidates = [];
+    driversSnap.forEach((doc) => {
+      const d   = doc.data();
+      const loc = d.currentLocation;
+      if (!loc?.latitude || !loc?.longitude) return;
+      if (!d.fcmToken)       return;
+      if (!isDriverAlive(d)) return;
+      const dist = haversineKm(pickupLat, pickupLng, loc.latitude, loc.longitude);
+      candidates.push({ id: doc.id, data: d, distance: dist });
+    });
+
+    const radiuses = [5, 10, 15, 30, 50];
+    let nearby = [];
+    for (const radius of radiuses) {
+      const found = candidates
+        .filter((d) => d.distance <= radius)
+        .sort((a, b) => a.distance - b.distance);
+      if (found.length >= 3) { nearby = found; console.log(`  ✅ Rayon ${radius}km — ${found.length} drivers`); break; }
+      else if (found.length > 0) nearby = found;
+    }
+
+    if (nearby.length === 0) {
+      console.warn(`⚠️ [assignDriver] ${rideId}: aucun driver dans un rayon de 50km`);
+      await rideRef.update({ status: "no_driver_available", updatedAt: FieldValue.serverTimestamp() });
+      return;
+    }
+
+    const hasActiveChecks = await Promise.all(nearby.map((d) => driverHasActiveRide(d.id)));
+    const validDrivers    = nearby.filter((_, i) => !hasActiveChecks[i]);
+
+    if (validDrivers.length === 0) {
+      console.warn(`⚠️ [assignDriver] ${rideId}: tous les drivers ont une course active`);
+      await rideRef.update({ status: "no_driver_available", updatedAt: FieldValue.serverTimestamp() });
+      return;
+    }
+
+    console.log(`  ✅ [assignDriver] ${rideId} — ${validDrivers.length} drivers éligibles`);
+
+    const driverQueue  = validDrivers.map((d) => d.id);
+    const targetDriver = validDrivers[0];
+
+    await rideRef.update({
+      targetedDriverId:  targetDriver.id,
+      driverQueue:       driverQueue,
+      currentOfferIndex: 0,
+      offerSentAt:       FieldValue.serverTimestamp(),
+      offerExpiresAt:    nextOfferExpiry(),
+      updatedAt:         FieldValue.serverTimestamp(),
+    });
+
+    await sendRideOfferToDriver(targetDriver.data.fcmToken, rideId, ride);
+    console.log(`✅ [assignDriver] ${rideId} → ${targetDriver.id} (${targetDriver.distance.toFixed(1)} km)`);
+
+  } catch (err) {
+    console.error(`❌ [assignDriver] Erreur pour ${rideId}:`, err);
+    // Marquer la course pour éviter qu'elle reste bloquée à "requested"
+    await rideRef.update({
+      status:    "no_driver_available",
+      updatedAt: FieldValue.serverTimestamp(),
+    }).catch(() => {});
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // UTILITAIRE : Vérifier si un driver est vivant (heartbeat récent)
 // ─────────────────────────────────────────────────────────────
 function isDriverAlive(driverData) {
@@ -165,108 +261,7 @@ exports.onTaxiRideCreated = onDocumentCreated(
       return;
     }
 
-    try {
-      // ── 1. Requête drivers en ligne et disponibles ──────────────
-      // ✅ FIX : On filtre aussi sur last_heartbeat côté Firestore
-      //          pour éliminer les drivers zombies dès la query
-      const heartbeatLimit = new Date(Date.now() - HEARTBEAT_TIMEOUT_MINUTES * 60 * 1000);
-
-      const driversSnap = await getFirestore()
-        .collection("drivers")
-        .where("isOnline",      "==", true)
-        .where("isAvailable",   "==", true)
-        .where("lastHeartbeat", ">=", heartbeatLimit) // ✅ AJOUTÉ
-        .get();
-
-      console.log("  Drivers vivants disponibles:", driversSnap.size);
-
-      if (driversSnap.empty) {
-        console.warn("⚠️ Aucun driver vivant disponible");
-        await snap.ref.update({
-          status:    "no_driver_available",
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-        return;
-      }
-
-      // ── 2. Calcul distance + filtres qualité ────────────────────
-      const candidates = [];
-      driversSnap.forEach((doc) => {
-        const d   = doc.data();
-        const loc = d.currentLocation;
-        if (!loc?.latitude || !loc?.longitude) return;
-        if (!d.fcmToken) return;
-        // Double-vérif heartbeat côté JS (au cas où index Firestore pas encore actif)
-        if (!isDriverAlive(d)) return;
-
-        const dist = haversineKm(pickupLat, pickupLng, loc.latitude, loc.longitude);
-        candidates.push({ id: doc.id, data: d, distance: dist });
-      });
-
-      // ── 3. Rayon adaptatif : 5 → 10 → 15 → 30 → 50 km ─────────
-      const radiuses = [5, 10, 15, 30, 50];
-      let nearby = [];
-
-      for (const radius of radiuses) {
-        const found = candidates
-          .filter((d) => d.distance <= radius)
-          .sort((a, b) => a.distance - b.distance);
-
-        if (found.length >= 3) {
-          nearby = found;
-          console.log(`  ✅ Rayon ${radius}km — ${found.length} drivers`);
-          break;
-        } else if (found.length > 0) {
-          nearby = found;
-        }
-      }
-
-      if (nearby.length === 0) {
-        console.warn("⚠️ Aucun driver dans un rayon de 50 km");
-        await snap.ref.update({
-          status:    "no_driver_available",
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-        return;
-      }
-
-      // ── 4. Vérifier les courses actives en parallèle ────────────
-      const hasActiveChecks = await Promise.all(
-        nearby.map((d) => driverHasActiveRide(d.id))
-      );
-      const validDrivers = nearby.filter((_, i) => !hasActiveChecks[i]);
-
-      if (validDrivers.length === 0) {
-        console.warn("⚠️ Tous les drivers ont une course active");
-        await snap.ref.update({
-          status:    "no_driver_available",
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-        return;
-      }
-
-      console.log(`  ✅ ${validDrivers.length} drivers vraiment disponibles`);
-
-      // ── 5. Écrire la queue + cibler le premier driver ───────────
-      const driverQueue  = validDrivers.map((d) => d.id);
-      const targetDriver = validDrivers[0];
-
-      await snap.ref.update({
-        targetedDriverId:  targetDriver.id,
-        driverQueue:         driverQueue,
-        currentOfferIndex:  0,
-        offerSentAt:        FieldValue.serverTimestamp(),
-        offerExpiresAt:     nextOfferExpiry(),
-        updatedAt:            FieldValue.serverTimestamp(),
-      });
-
-      // ── 6. Envoyer FCM au driver ciblé ──────────────────────────
-      await sendRideOfferToDriver(targetDriver.data.fcmToken, rideId, ride);
-      console.log(`✅ Driver ciblé: ${targetDriver.id} (${targetDriver.distance.toFixed(1)} km)`);
-
-    } catch (err) {
-      console.error("❌ Erreur onTaxiRideCreated:", err);
-    }
+    await assignDriverToRide(getFirestore(), snap.ref, rideId, ride);
   }
 );
 
@@ -307,7 +302,10 @@ exports.acceptRideTx = onCall(async (request) => {
         }
       }
       if (ride.requestedAt) {
-        const ageMs = Date.now() - ride.requestedAt.toMillis();
+        const requestedMs = ride.requestedAt.toMillis
+          ? ride.requestedAt.toMillis()
+          : new Date(ride.requestedAt).getTime();
+        const ageMs = Date.now() - requestedMs;
         if (ageMs > RIDE_MAX_AGE_MINUTES * 60 * 1000) {
           throw new HttpsError("deadline-exceeded", "Course expirée");
         }
@@ -497,7 +495,6 @@ exports.cleanupExpiredOffers = onSchedule(
         .get();
 
       console.log(`  ${expiredSnap.size} offres expirées`);
-      if (expiredSnap.empty) return;
 
       const promises = expiredSnap.docs.map(async (doc) => {
         const ride         = doc.data();
@@ -550,6 +547,37 @@ exports.cleanupExpiredOffers = onSchedule(
     } catch (err) {
       console.error("❌ Erreur cleanupExpiredOffers:", err);
     }
+
+    // ── Rides abandonnées : CF crashée lors de la création ──────
+    // Courses "requested" depuis > 2 min sans driverQueue
+    // (onTaxiRideCreated n'a jamais écrit targetedDriverId)
+    try {
+      const abandonedSnap = await db
+        .collection("taxiRides")
+        .where("status", "==", "requested")
+        .get();
+
+      const cutoff    = new Date(now.getTime() - 2 * 60 * 1000);
+      const abandoned = abandonedSnap.docs.filter((doc) => {
+        const d = doc.data();
+        const requestedAt = d.requestedAt?.toDate?.();
+        return !d.driverId
+          && (!d.driverQueue || d.driverQueue.length === 0)
+          && requestedAt instanceof Date
+          && requestedAt < cutoff;
+      });
+
+      if (abandoned.length > 0) {
+        console.log(`  🔄 ${abandoned.length} ride(s) abandonnée(s) → réassignation`);
+        await Promise.allSettled(
+          abandoned.map((doc) =>
+            assignDriverToRide(db, doc.ref, doc.id, doc.data())
+          )
+        );
+      }
+    } catch (err) {
+      console.error("❌ Erreur récupération rides abandonnées:", err);
+    }
   }
 );
 
@@ -566,10 +594,14 @@ exports.cleanupStuckRides = onSchedule(
     let   cleaned = 0;
 
     try {
-      const [acceptedSnap, arrivedSnap, startedSnap] = await Promise.all([
+      const [acceptedSnap, arrivingSnap, arrivedSnap, startedSnap] = await Promise.all([
         db.collection("taxiRides")
           .where("status", "==", "accepted")
           .where("acceptedAt", "<", new Date(now - STUCK_RIDE_TIMEOUTS.accepted * 60 * 1000))
+          .get(),
+        db.collection("taxiRides")
+          .where("status", "==", "arriving")
+          .where("arrivingAt", "<", new Date(now - STUCK_RIDE_TIMEOUTS.arriving * 60 * 1000))
           .get(),
         db.collection("taxiRides")
           .where("status", "==", "arrived")
@@ -583,6 +615,7 @@ exports.cleanupStuckRides = onSchedule(
 
       const allStuck = [
         ...acceptedSnap.docs,
+        ...arrivingSnap.docs,
         ...arrivedSnap.docs,
         ...startedSnap.docs,
       ];
@@ -964,8 +997,121 @@ exports.onOrderCreated = onDocumentCreated("orders/{orderId}", async (event) => 
   if (!snap) return;
   const order   = snap.data();
   const orderId = event.params.orderId;
-  // Notification handled by sendRestaurantNotification callable — no FCM here
   console.log("📦 Nouvelle commande créée:", orderId, "restaurant:", order.restaurantId);
+
+  // ── Validation des prix côté serveur ────────────────────────
+  const db    = getFirestore();
+  const items = order.items || [];
+  if (items.length === 0) return;
+
+  try {
+    // Récupérer les vrais prix depuis menuItems en parallèle
+    const menuDocs = await Promise.all(
+      items.map((item) => db.collection("menuItems").doc(item.menuId).get())
+    );
+
+    let priceValid   = true;
+    let realSubtotal = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      const item    = items[i];
+      const menuDoc = menuDocs[i];
+
+      // Article introuvable → annulation immédiate
+      if (!menuDoc.exists) {
+        console.warn(`[validatePrices] Article ${item.menuId} introuvable → annulation`);
+        await snap.ref.update({
+          status:             "cancelled",
+          cancellationReason: `Article introuvable: ${item.name || item.menuId}`,
+          cancelledBy:        "system",
+          cancelledAt:        FieldValue.serverTimestamp(),
+          updatedAt:          FieldValue.serverTimestamp(),
+        });
+        return;
+      }
+
+      const realBasePrice = menuDoc.data().price ?? 0;
+      const extrasTotal   = item.extrasTotal ?? 0;
+      const saucesTotal   = item.saucesTotal ?? 0;
+      const realUnitPrice = realBasePrice + extrasTotal + saucesTotal;
+      realSubtotal       += realUnitPrice * (item.quantity ?? 1);
+
+      if (realBasePrice !== item.basePrice) {
+        console.warn(
+          `[validatePrices] ${item.name}: client=${item.basePrice} réel=${realBasePrice}`
+        );
+        priceValid = false;
+      }
+    }
+
+    const deliveryFee = order.deliveryFee ?? 500;
+    const realTotal   = realSubtotal + deliveryFee;
+
+    if (!priceValid || realTotal !== order.total) {
+      console.warn(`[validatePrices] ${orderId} — correction: ${order.total} → ${realTotal} FDJ`);
+      await snap.ref.update({
+        subtotal:       realSubtotal,
+        total:          realTotal,
+        priceValidated: true,
+        updatedAt:      FieldValue.serverTimestamp(),
+      });
+    } else {
+      await snap.ref.update({
+        priceValidated: true,
+        updatedAt:      FieldValue.serverTimestamp(),
+      });
+      console.log(`✅ [validatePrices] ${orderId} — prix valides: ${realTotal} FDJ`);
+    }
+  } catch (err) {
+    console.error(`❌ [validatePrices] ${orderId}:`, err);
+  }
+
+  // ── Notification restaurant ──────────────────────────────────
+  // Envoi côté serveur (Admin SDK) — fiable même si le client est déjà parti
+  if (!order.restaurantId) return;
+  try {
+    const restaurantDoc = await db.collection("restaurants").doc(order.restaurantId).get();
+    if (!restaurantDoc.exists) {
+      console.warn(`⚠️ [onOrderCreated] Restaurant introuvable: ${order.restaurantId}`);
+      return;
+    }
+    const fcmToken = restaurantDoc.data().fcmToken;
+    if (!fcmToken) {
+      console.warn(`⚠️ [onOrderCreated] Pas de token FCM pour restaurant ${order.restaurantId}`);
+      return;
+    }
+    const customerName = order.customerName || order.userName || "Client";
+    const total        = order.total || 0;
+    await getMessaging().send({
+      token: fcmToken,
+      notification: {
+        title: "🔔 Nouvelle commande !",
+        body:  `${customerName} a commandé pour ${total} FDJ`,
+      },
+      data: {
+        type:         "new_order",
+        orderId,
+        restaurantId: order.restaurantId,
+        customerName,
+        total:        total.toString(),
+      },
+      android: {
+        priority: "high",
+        notification: { sound: "default", channelId: "orders" },
+      },
+      apns: { payload: { aps: { sound: "default" } } },
+    });
+    console.log(`✅ [onOrderCreated] Notification restaurant envoyée: ${order.restaurantId}`);
+  } catch (notifErr) {
+    const stale = notifErr.code === "messaging/registration-token-not-registered" ||
+                  (notifErr.message && notifErr.message.includes("Requested entity was not found"));
+    if (stale) {
+      console.log(`🗑️ Token FCM invalide pour restaurant ${order.restaurantId} — nettoyage`);
+      await db.collection("restaurants").doc(order.restaurantId).update({ fcmToken: null });
+    } else {
+      console.error("❌ [onOrderCreated] Erreur notification restaurant:", notifErr.message);
+    }
+  }
 });
 
 exports.sendRestaurantNotification = onCall(async (request) => {
@@ -1056,12 +1202,13 @@ exports.sendOrderReadyNotifications = onCall(async (request) => {
             token: livreur.fcmToken,
             notification: {
               title: "🛵 Nouvelle livraison !",
-              body:  `Commande de ${order.customerName} — ${order.total} FDJ`,
+              body:  `Commande de ${order.userName || order.customerName || "Client"} — ${order.total} FDJ`,
             },
             data: {
               type: "order_ready_for_delivery", orderId,
               restaurantName: order.restaurantName || "", restaurantId: order.restaurantId || "",
-              customerName:   order.customerName   || "", customerPhone: order.customerPhone || "",
+              customerName:   order.userName       || order.customerName   || "",
+              customerPhone:  order.userPhone      || order.customerPhone  || "",
               deliveryAddress: order.deliveryAddress || "", total: order.total.toString(),
             },
             android: { priority: "high", notification: { sound: "default", channelId: "orders", priority: "high" } },
@@ -1079,8 +1226,8 @@ exports.sendOrderReadyNotifications = onCall(async (request) => {
               restaurant_name:  order.restaurantName    || "",
               pickup_address:   order.restaurantAddress || "",
               delivery_address: order.deliveryAddress   || "",
-              customer_name:    order.customerName      || "",
-              customer_phone:   order.customerPhone     || "",
+              customer_name:    order.userName          || order.customerName  || "",
+              customer_phone:   order.userPhone         || order.customerPhone || "",
               total:            order.total             || 0,
               estimated_distance: 5,
               estimated_time:     15,

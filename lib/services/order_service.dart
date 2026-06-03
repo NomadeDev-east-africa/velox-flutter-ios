@@ -36,76 +36,62 @@ class OrderService {
     }
   }
 
-  // Récupérer les commandes d'un utilisateur
+  // Récupérer les commandes d'un utilisateur (20 plus récentes)
   Future<List<Order>> getUserOrders(String userId) async {
     try {
       final snapshot = await _firestore
           .collection(_collection)
           .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .limit(20)
           .get();
 
-      final orders = snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
-
-      // Tri local par date (plus récent en premier)
-      orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      return orders;
+      return snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
     } catch (e) {
       debugPrint('❌ [OrderService] Erreur récupération commandes utilisateur: $e');
       return [];
     }
   }
 
-  // Stream des commandes d'un utilisateur
+  // Stream des commandes d'un utilisateur (20 plus récentes)
   Stream<List<Order>> streamUserOrders(String userId) {
     return _firestore
         .collection(_collection)
         .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .limit(20)
         .snapshots()
-        .map((snapshot) {
-      final orders = snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
-
-      // Tri local par date
-      orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      return orders;
-    });
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList());
   }
 
-  // Récupérer les commandes d'un restaurant
+  // Récupérer les commandes d'un restaurant (20 plus récentes)
   Future<List<Order>> getRestaurantOrders(String restaurantId) async {
     try {
       final snapshot = await _firestore
           .collection(_collection)
           .where('restaurantId', isEqualTo: restaurantId)
+          .orderBy('createdAt', descending: true)
+          .limit(20)
           .get();
 
-      final orders = snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
-
-      // Tri local par date
-      orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      return orders;
+      return snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
     } catch (e) {
       debugPrint('❌ [OrderService] Erreur récupération commandes restaurant: $e');
       return [];
     }
   }
 
-  // Stream des commandes d'un restaurant
+  // Stream des commandes d'un restaurant (20 plus récentes)
   Stream<List<Order>> streamRestaurantOrders(String restaurantId) {
     return _firestore
         .collection(_collection)
         .where('restaurantId', isEqualTo: restaurantId)
+        .orderBy('createdAt', descending: true)
+        .limit(20)
         .snapshots()
-        .map((snapshot) {
-      final orders = snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
-
-      // Tri local par date
-      orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      return orders;
-    });
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList());
   }
 
   // Mettre à jour le statut d'une commande
@@ -113,7 +99,7 @@ class OrderService {
     try {
       await _firestore.collection(_collection).doc(orderId).update({
         'status': status,
-        'updatedAt': Timestamp.now(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       debugPrint('✅ [OrderService] Statut mis à jour: $status');
@@ -130,8 +116,8 @@ class OrderService {
       await _firestore.collection(_collection).doc(orderId).update({
         'status':      Order.statusCancelled,
         'cancelledBy': 'customer',
-        'cancelledAt': Timestamp.now(),
-        'updatedAt':   Timestamp.now(),
+        'cancelledAt': FieldValue.serverTimestamp(),
+        'updatedAt':   FieldValue.serverTimestamp(),
       });
       debugPrint('✅ [OrderService] Commande annulée: $orderId');
       return true;

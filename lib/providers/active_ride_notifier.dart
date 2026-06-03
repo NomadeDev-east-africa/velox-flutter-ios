@@ -184,11 +184,14 @@ class ActiveRideNotifier extends StateNotifier<ActiveRideState> {
         _handleStatusChange(ride);
 
         // Course terminée → nettoyer après délai (laisse l'UI se mettre à jour)
+        // On capture le rideId avant le délai pour ne pas écraser une nouvelle
+        // course créée pendant ces 4s.
         if (!ride.isActive) {
+          final terminatedId = ride.rideId;
           debugPrint(
               '🏁 [ActiveRide] Terminée (${ride.status.name}) → nettoyage dans 4s');
           await Future.delayed(const Duration(seconds: 4));
-          if (mounted) await _clearAndReset();
+          if (mounted && state.rideId == terminatedId) await _clearAndReset();
         }
       },
       onError: (Object error) {
@@ -226,32 +229,47 @@ class ActiveRideNotifier extends StateNotifier<ActiveRideState> {
   // LIFECYCLE — appelé par _MyAppState.didChangeAppLifecycleState
   // ════════════════════════════════════════════════════════════
 
-  /// Pause le stream GPS/Firestore quand l'app passe en arrière-plan.
-  /// Le timer de reconnexion est aussi stoppé pour éviter des tentatives inutiles.
   void pauseStream() {
     if (_isPaused) return;
     _isPaused = true;
-    _sub?.pause();
+    // Don't call _sub?.pause() — it buffers all Firestore events and delivers
+    // them in a burst when resumed, making the UI appear stuck then jump.
+    // Firestore handles connectivity natively; we just track the flag.
     _reconnectTimer?.cancel();
-    debugPrint('⏸️ [ActiveRide] Stream pausé (app en background)');
+    debugPrint('⏸️ [ActiveRide] Stream marqué en background (sans pause)');
   }
 
-  /// Reprend le stream quand l'app revient au premier plan.
-  /// Si la subscription était pausée, on la reprend ; sinon on redémarre
-  /// depuis le rideId en cache (cas d'un timeout pendant le background).
   void resumeStream() {
     if (!_isPaused) return;
     _isPaused = false;
-    if (_sub != null && (_sub?.isPaused ?? false)) {
-      _sub?.resume();
-      debugPrint('▶️ [ActiveRide] Stream repris');
-    } else {
-      // Stream mort pendant le background → relancer depuis Hive
-      final rideId = HiveService.getRideId();
-      if (rideId != null && !state.isTerminated) {
-        debugPrint('▶️ [ActiveRide] Redémarrage stream depuis cache Hive: $rideId');
+    debugPrint('▶️ [ActiveRide] App au premier plan — refresh immédiat');
+
+    final rideId = HiveService.getRideId();
+    if (rideId != null && !state.isTerminated) {
+      if (_sub == null) {
+        // Stream mort pendant le background (timeout 45s) → relancer
         _startStream(rideId);
+      } else {
+        // Stream encore vivant → one-shot pour afficher l'état courant immédiatement
+        _refreshOnce(rideId);
       }
+    }
+  }
+
+  Future<void> _refreshOnce(String rideId) async {
+    try {
+      final ride = await _rideService.getRideById(rideId);
+      if (!mounted || ride == null) return;
+      debugPrint('🔄 [ActiveRide] Refresh post-resume: ${ride.status.name}');
+      state = state.copyWith(ride: ride, clearError: true);
+      await _persistToHive(ride);
+      if (!ride.isActive) {
+        final terminatedId = ride.rideId;
+        await Future.delayed(const Duration(seconds: 4));
+        if (mounted && state.rideId == terminatedId) await _clearAndReset();
+      }
+    } catch (e) {
+      debugPrint('⚠️ [ActiveRide] Refresh post-resume échoué: $e');
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:nomade_client/constants.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 import 'package:nomade_client/models/place.dart';
 import 'package:nomade_client/models/ride_choice.dart';
 import 'package:nomade_client/models/trip_details.dart';
@@ -65,6 +66,9 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
 
   // ── Services ──────────────────────────────────────────────
   final LocationService _locationService = LocationService();
+
+  // ── Couleurs thème ────────────────────────────────────────
+  late AppColors _c;
 
   // ── Getters raccourcis sur les champs restaurables ────────
   String? get _pickupAddress        => _restorablePickupAddress.value;
@@ -296,10 +300,12 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
   // ─────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    _c = isDark ? AppColors.dark : AppColors.light;
     final bool hasDestination = _destination != null;
 
     return Scaffold(
-      backgroundColor: grisFond,
+      backgroundColor: _c.bg,
       appBar: _buildAppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -343,8 +349,8 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
 
               // ── Titre sélecteur véhicule (si destination choisie) ──
               if (hasDestination)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -352,7 +358,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: textePrincipal,
+                        color: _c.onSurface,
                       ),
                     ),
                   ),
@@ -383,7 +389,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
   // ─────────────────────────────────────────────────────────
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: blanc,
+      backgroundColor: _c.surfaceLow,
       elevation: 0,
       title: Row(
         children: [
@@ -407,13 +413,13 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
           padding: const EdgeInsets.only(right: 12),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Colors.grey.shade100, Colors.grey.shade200]),
+              color: _c.surface,
               shape: BoxShape.circle,
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha:0.05), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: IconButton(
               icon: const Icon(Icons.notifications_none),
-              color: texteSecondaire,
+              color: _c.onSurfaceVariant,
               onPressed: () {},
             ),
           ),
@@ -453,7 +459,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: blanc,
+          color: _c.surfaceLow,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(color: Colors.black.withValues(alpha:0.08), blurRadius: 16, offset: const Offset(0, 6)),
@@ -476,7 +482,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                 width: 2, height: 20,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [vertPrincipal.withValues(alpha:0.4), Colors.grey.shade300],
+                    colors: [vertPrincipal.withValues(alpha:0.4), _c.outlineVariant],
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,
                   ),
                 ),
@@ -522,7 +528,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                   _isAdjustingPickup ? '🔄 Ajustement manuel' : '📍 Point de départ',
                   style: TextStyle(
                     fontSize: 11, fontWeight: FontWeight.w600,
-                    color: _isAdjustingPickup ? drapeauVert : texteSecondaire,
+                    color: _isAdjustingPickup ? drapeauVert : _c.onSurfaceVariant,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -533,7 +539,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                         child: CircularProgressIndicator(strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(drapeauVert))),
                     const SizedBox(width: 8),
-                    const Text('Localisation...', style: TextStyle(fontSize: 13, color: texteSecondaire)),
+                    Text('Localisation...', style: TextStyle(fontSize: 13, color: _c.onSurfaceVariant)),
                   ])
                 else
                   Text(
@@ -541,7 +547,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: _pickupAddress != null ? FontWeight.w600 : FontWeight.w400,
-                      color: _pickupAddress != null ? textePrincipal : texteSecondaire,
+                      color: _pickupAddress != null ? _c.onSurface : _c.onSurfaceVariant,
                     ),
                     maxLines: 1, overflow: TextOverflow.ellipsis,
                   ),
@@ -555,11 +561,11 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: _isAdjustingPickup ? drapeauVert.withValues(alpha:0.12) : Colors.grey.shade100,
+                  color: _isAdjustingPickup ? drapeauVert.withValues(alpha:0.12) : _c.surface,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.edit_location_alt,
-                    color: _isAdjustingPickup ? drapeauVert : texteSecondaire, size: 16),
+                    color: _isAdjustingPickup ? drapeauVert : _c.onSurfaceVariant, size: 16),
               ),
             ),
         ],
@@ -594,7 +600,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: hasDestination ? FontWeight.w600 : FontWeight.w500,
-                color: hasDestination ? textePrincipal : texteSecondaire,
+                color: hasDestination ? _c.onSurface : _c.onSurfaceVariant,
               ),
               maxLines: 1, overflow: TextOverflow.ellipsis,
             ),
@@ -605,7 +611,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
               onTap: _clearDestination,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                child: const Icon(Icons.close, color: texteSecondaire, size: 18),
+                child: Icon(Icons.close, color: _c.onSurfaceVariant, size: 18),
               ),
             )
           else
@@ -770,22 +776,22 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: blanc,
+                  color: _c.surfaceLow,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [BoxShadow(color: Colors.black.withValues(alpha:0.12), blurRadius: 8)],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.straighten, size: 13, color: texteSecondaire),
+                    Icon(Icons.straighten, size: 13, color: _c.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text('${_distanceKm.toStringAsFixed(1)} km',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textePrincipal)),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _c.onSurface)),
                     const SizedBox(width: 10),
-                    const Icon(Icons.timer_outlined, size: 13, color: texteSecondaire),
+                    Icon(Icons.timer_outlined, size: 13, color: _c.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text('$_durationMin min',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textePrincipal)),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _c.onSurface)),
                   ],
                 ),
               ),
@@ -828,6 +834,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                 distance: hasDestination ? _distanceKm : 0.0,
                 isSelected: _selectedRide.id == v.id,
                 onTap: () => setState(() => _selectedRide = v),
+                c: _c,
               ),
             ),
           );
@@ -947,7 +954,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
       child: Container(
         width: 40, height: 40,
         decoration: BoxDecoration(
-          color: blanc,
+          color: _c.surfaceLow,
           shape: BoxShape.circle,
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha:0.15), blurRadius: 10, offset: const Offset(0, 3))],
         ),

@@ -8,6 +8,7 @@ import 'package:nomade_client/screens/food/home_food/home_screen_food.dart';
 import 'package:nomade_client/screens/profile/profile_screen.dart';
 import 'package:nomade_client/screens/history/order_history_screen.dart';
 import 'package:nomade_client/theme/app_colors.dart';
+import 'package:nomade_client/translations/app_translations.dart';
 
 class HomeScreenApp extends ConsumerStatefulWidget {
   const HomeScreenApp({super.key});
@@ -130,7 +131,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Bonjour $firstName',
+                  '${tr('hello')} $firstName',
                   style: GoogleFonts.poppins(
                     color: c.onSurface,
                     fontSize: 20,
@@ -156,7 +157,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
       child: Text(
-        '✦  Clique, Chill, on livre',
+        '✦  ${tr('tagline')}',
         style: GoogleFonts.inter(
           color: c.primary,
           fontSize: 15,
@@ -171,14 +172,18 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
 
   // ── POINTS FIDÉLITÉ ───────────────────────────────────────────────────────
   Widget _buildLoyaltyCard(AppColors c) {
-    final statsAsync = ref.watch(orderStatsProvider);
-    final points = statsAsync.whenOrNull(data: (s) => s.loyaltyPoints) ?? 0;
+    // Solde DISPONIBLE = gagnés − dépensés
+    final points = ref.watch(availablePointsProvider);
     final displayPts = _formatNumber(points.toDouble(), isInt: true);
 
+    // Badge basé sur le cumul GAGNÉ (à vie) — ne régresse pas après dépense
+    final earned =
+        ref.watch(orderStatsProvider).whenOrNull(data: (s) => s.loyaltyPoints) ??
+            0;
     String badge;
-    if (points >= 500) {
+    if (earned >= 500) {
       badge = 'VIP';
-    } else if (points >= 100) {
+    } else if (earned >= 100) {
       badge = 'GOLD';
     } else {
       badge = 'MEMBER';
@@ -199,7 +204,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'POINTS FIDÉLITÉ',
+                  tr('loyalty_points').toUpperCase(),
                   style: TextStyle(
                     color: c.onSurfaceVariant,
                     fontSize: 11,
@@ -234,7 +239,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '1 commande = 10 pts',
+                  tr('one_order_points'),
                   style: TextStyle(
                     color: c.primary.withValues(alpha: 0.7),
                     fontSize: 11,
@@ -353,7 +358,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'STATISTIQUES',
+            tr('statistics').toUpperCase(),
             style: TextStyle(
               color: c.onSurfaceVariant,
               fontSize: 11,
@@ -364,13 +369,13 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildStatItem('12', 'COURSES', c),
+              _buildStatItem('12', tr('rides').toUpperCase(), c),
               _buildVerticalDivider(c),
-              _buildStatItem(isLoading ? '—' : '$totalOrders', 'COMMANDES', c),
+              _buildStatItem(isLoading ? '—' : '$totalOrders', tr('orders').toUpperCase(), c),
               _buildVerticalDivider(c),
               _buildStatItem(
                 isLoading ? '—' : _formatNumber(totalSpent),
-                'DÉPENSES\n(FDJ)',
+                '${tr('expenses').toUpperCase()}\n(FDJ)',
                 c,
               ),
             ],
@@ -434,7 +439,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
     final actions = [
       {
         'icon': Icons.history_rounded,
-        'label': 'Historique',
+        'label': tr('history'),
         'onTap': () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
@@ -442,10 +447,10 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
       },
       {
         'icon': Icons.payment_rounded,
-        'label': 'Paiements',
+        'label': tr('payments'),
         'onTap': () => ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Paiements — À venir'),
+            content: Text('${tr('payments')} — ${tr('coming_soon')}'),
             backgroundColor: c.surfaceTop,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -454,10 +459,10 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
       },
       {
         'icon': Icons.account_balance_wallet_rounded,
-        'label': 'Portefeuille',
+        'label': tr('wallet'),
         'onTap': () => ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Portefeuille — À venir'),
+            content: Text('${tr('wallet')} — ${tr('coming_soon')}'),
             backgroundColor: c.surfaceTop,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -472,7 +477,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
           child: Text(
-            'Actions rapides',
+            tr('quick_actions'),
             style: TextStyle(
               color: c.onSurface,
               fontSize: 20,
@@ -560,7 +565,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Nos Services',
+                  tr('our_services'),
                   style: TextStyle(
                     color: c.onSurface,
                     fontSize: 20,
@@ -569,7 +574,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                   ),
                 ),
                 Text(
-                  'Tout voir',
+                  tr('see_all'),
                   style: TextStyle(
                     color: c.primary,
                     fontSize: 13,
@@ -585,14 +590,14 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
               children: [
                 _buildServiceCard(
                   title: 'VTC DJIB',
-                  subtitle: 'Déplacez-vous facilement en ville',
+                  subtitle: tr('vtc_subtitle'),
                   imageAsset: 'assets/vehicule/taxi-B.png',
                   onTap: _goToTaxi,
                   c: c,
                 ),
                 _buildServiceCard(
-                  title: 'Restaurants & Fast food',
-                  subtitle: 'Toutes vos envies, livrées chez vous',
+                  title: tr('restaurants_fastfood'),
+                  subtitle: tr('food_subtitle'),
                   imageAsset: 'assets/images/fast-food.png',
                   onTap: _goToRestaurants,
                   c: c,
@@ -620,8 +625,8 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
       ),
       child: Row(
         children: [
-          _buildNavItem(0, Icons.home_rounded, 'Accueil', c),
-          _buildNavItem(1, Icons.person_rounded, 'Profil', c),
+          _buildNavItem(0, Icons.home_rounded, tr('home_food'), c),
+          _buildNavItem(1, Icons.person_rounded, tr('profile'), c),
         ],
       ),
     );
@@ -684,7 +689,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
               Icon(Icons.lock_outline, color: c.primary, size: 60),
               const SizedBox(height: 24),
               Text(
-                'Connexion requise',
+                tr('login_required'),
                 style: TextStyle(
                   color: c.onSurface,
                   fontSize: 22,
@@ -693,7 +698,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Connectez-vous pour accéder aux services',
+                tr('login_to_access'),
                 style: TextStyle(color: c.onSurfaceVariant, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -709,8 +714,8 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Se connecter',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(tr('login'),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),

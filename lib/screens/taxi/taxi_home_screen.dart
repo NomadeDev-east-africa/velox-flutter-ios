@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:nomade_client/constants.dart';
 import 'package:nomade_client/theme/app_colors.dart';
+import 'package:nomade_client/translations/app_translations.dart';
 import 'package:nomade_client/models/place.dart';
 import 'package:nomade_client/models/ride_choice.dart';
 import 'package:nomade_client/models/trip_details.dart';
@@ -201,9 +202,9 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
 
     final pickupPlace = Place(
       id: 'pickup_current',
-      name: _pickupAddress ?? 'Ma position',
+      name: _pickupAddress ?? tr('my_position'),
       location: _pickupLatLng!,
-      address: _pickupAddress ?? 'Ma position',
+      address: _pickupAddress ?? tr('my_position'),
       type: PlaceType.saved,
       icon: Icons.my_location,
     );
@@ -264,16 +265,16 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
 
     final pickupPlace = Place(
       id: 'pickup_current',
-      name: _pickupAddress ?? 'Ma position',
+      name: _pickupAddress ?? tr('my_position'),
       location: _pickupLatLng!,
-      address: _pickupAddress ?? 'Ma position',
+      address: _pickupAddress ?? tr('my_position'),
       type: PlaceType.saved,
     );
 
     final tripDetails = TripDetails(
       departure: _pickupLatLng!,
       destination: _destination!.location,
-      departureAddress: _pickupAddress ?? 'Ma position',
+      departureAddress: _pickupAddress ?? tr('my_position'),
       destinationAddress: _destination!.address ?? _destination!.name,
       distance: _distanceKm,
       duration: _durationMin,
@@ -323,8 +324,8 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                 ).createShader(bounds),
                 child: Text(
                   hasDestination
-                      ? 'Votre course est prête ✓'
-                      : "Où allons-nous aujourd'hui ? 🌍",
+                      ? '${tr('ride_ready')} ✓'
+                      : '${tr('where_to_today')} 🌍',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -354,7 +355,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Choisissez votre véhicule',
+                      tr('choose_vehicle'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -525,7 +526,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isAdjustingPickup ? '🔄 Ajustement manuel' : '📍 Point de départ',
+                  _isAdjustingPickup ? '🔄 ${tr('manual_adjust')}' : '📍 ${tr('pickup_point')}',
                   style: TextStyle(
                     fontSize: 11, fontWeight: FontWeight.w600,
                     color: _isAdjustingPickup ? drapeauVert : _c.onSurfaceVariant,
@@ -539,11 +540,11 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                         child: CircularProgressIndicator(strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(drapeauVert))),
                     const SizedBox(width: 8),
-                    Text('Localisation...', style: TextStyle(fontSize: 13, color: _c.onSurfaceVariant)),
+                    Text(tr('locating'), style: TextStyle(fontSize: 13, color: _c.onSurfaceVariant)),
                   ])
                 else
                   Text(
-                    _pickupAddress ?? 'Choisir un point de départ',
+                    _pickupAddress ?? tr('choose_pickup'),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: _pickupAddress != null ? FontWeight.w600 : FontWeight.w400,
@@ -596,7 +597,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
             child: Text(
               hasDestination
                   ? (_destination!.address ?? _destination!.name)
-                  : 'Destination — Où allez-vous ?',
+                  : tr('destination_hint'),
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: hasDestination ? FontWeight.w600 : FontWeight.w500,
@@ -881,7 +882,7 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
               ),
               const SizedBox(width: 10),
               Text(
-                canTap ? 'Choisir une destination' : 'Localisation en cours...',
+                canTap ? tr('choose_destination') : tr('locating_in_progress'),
                 style: TextStyle(
                   fontSize: 17, fontWeight: FontWeight.bold,
                   color: canTap ? blanc : Colors.white70, letterSpacing: 0.3,
@@ -930,8 +931,8 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Confirmer la course',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: blanc, letterSpacing: 0.3)),
+                  Text(tr('confirm_ride'),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: blanc, letterSpacing: 0.3)),
                   Text('${price.toStringAsFixed(0)} FDJ · ${_selectedRide.name}',
                       style: TextStyle(fontSize: 12, color: blanc.withValues(alpha:0.85))),
                 ],
@@ -971,13 +972,13 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
         borderRadius: BorderRadius.circular(30),
         boxShadow: [BoxShadow(color: drapeauVert.withValues(alpha:0.3), blurRadius: 8)],
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.touch_app, color: blanc, size: 14),
-          SizedBox(width: 6),
-          Text('Tapez pour déplacer',
-              style: TextStyle(color: blanc, fontSize: 12, fontWeight: FontWeight.w600)),
+          const Icon(Icons.touch_app, color: blanc, size: 14),
+          const SizedBox(width: 6),
+          Text(tr('tap_to_move'),
+              style: const TextStyle(color: blanc, fontSize: 12, fontWeight: FontWeight.w600)),
         ],
       ),
     );

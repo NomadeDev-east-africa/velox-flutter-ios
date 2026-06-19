@@ -45,5 +45,30 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- ── Permissions (textes affichés par iOS lors de la demande) ── -->
+	<!-- Localisation : suivi du livreur et courses taxi -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Nomade utilise votre position pour vous localiser, suivre votre livraison et calculer votre trajet.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Nomade utilise votre position en arrière-plan pour suivre la livraison et la course en cours.</string>
+	<!-- Caméra et photothèque : photo de profil -->
+	<key>NSCameraUsageDescription</key>
+	<string>Nomade utilise l'appareil photo pour prendre votre photo de profil.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Nomade accède à vos photos pour définir votre photo de profil.</string>
+
+	<!-- ── Google Sign-In : scheme inversé du iosClientId ── -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.91637120258-5q0fa6o0oapl6aema8ss0tj3vauona78</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

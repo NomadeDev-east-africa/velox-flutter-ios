@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nomade_client/providers/theme_notifier.dart';
 import 'package:nomade_client/theme/app_colors.dart';
+import 'package:nomade_client/services/location_service.dart';
 
 /// Écran de suivi de la position du livreur en temps réel.
 /// Affiché depuis OrderTrackingScreen quand le statut est "delivering".
@@ -29,6 +30,44 @@ class TrackDeliveryScreen extends ConsumerStatefulWidget {
 class _TrackDeliveryScreenState extends ConsumerState<TrackDeliveryScreen> {
   final MapController _mapController = MapController();
   LivreurLocation? _dernierePosition;
+
+  // ── Route livreur → client ────────────────────────────────────
+  final LocationService _locationService = LocationService();
+  List<LatLng> _routePoints = [];
+  LatLng? _routeAnchor;       // position du livreur au dernier calcul
+  bool _fetchingRoute = false;
+
+  /// Recalcule la route routière entre le livreur et l'adresse de livraison.
+  /// Throttlé : seulement si aucune route encore, ou si le livreur a bougé > 40 m.
+  Future<void> _maybeUpdateRoute(LatLng driver, LatLng? destination) async {
+    if (destination == null || _fetchingRoute) return;
+    if (_routePoints.isNotEmpty && _routeAnchor != null) {
+      final moved = _locationService.calculateDistance(
+        _routeAnchor!.latitude, _routeAnchor!.longitude,
+        driver.latitude, driver.longitude,
+      );
+      if (moved < 0.04) return; // < 40 m → on garde la route actuelle
+    }
+    _fetchingRoute = true;
+    try {
+      final route = await _locationService.getRoute(
+        startLat: driver.latitude,
+        startLon: driver.longitude,
+        endLat: destination.latitude,
+        endLon: destination.longitude,
+      );
+      if (!mounted) return;
+      setState(() {
+        _routePoints =
+            route.coordinates.map((c) => LatLng(c.latitude, c.longitude)).toList();
+        _routeAnchor = driver;
+      });
+    } catch (_) {
+      // En cas d'échec on conserve la route précédente
+    } finally {
+      _fetchingRoute = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +157,7 @@ class _TrackDeliveryScreenState extends ConsumerState<TrackDeliveryScreen> {
               try {
                 _mapController.move(livreurLatLng, _mapController.camera.zoom);
               } catch (_) {}
+              _maybeUpdateRoute(livreurLatLng, destination);
             }
           });
 
@@ -175,6 +215,18 @@ class _TrackDeliveryScreenState extends ConsumerState<TrackDeliveryScreen> {
                       urlTemplate: tileUrl,
                       subdomains: const ['a', 'b', 'c', 'd'],
                     ),
+                    if (_routePoints.length >= 2)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: _routePoints,
+                            color: c.primary,
+                            strokeWidth: 4,
+                            borderColor: Colors.white.withValues(alpha: 0.7),
+                            borderStrokeWidth: 2,
+                          ),
+                        ],
+                      ),
                     MarkerLayer(markers: markers),
                   ],
                 ),

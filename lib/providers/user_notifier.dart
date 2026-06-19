@@ -338,6 +338,24 @@ class UserNotifier extends StateNotifier<UserState> {
     }
   }
 
+  // ─── FIDÉLITÉ ─────────────────────────────────────────────────
+
+  /// Incrémente les points fidélité dépensés (réduction appliquée au checkout).
+  Future<void> redeemPoints(int points) async {
+    final user = _auth.currentUser;
+    if (user == null || points <= 0) return;
+    try {
+      await _firestore.collection('users').doc(user.uid).set(
+        {'redeemedPoints': FieldValue.increment(points)},
+        SetOptions(merge: true),
+      );
+      debugPrint('✅ [UserNotifier] $points points dépensés');
+    } catch (e) {
+      debugPrint('❌ [UserNotifier] redeemPoints: $e');
+      rethrow;
+    }
+  }
+
   // ─── HELPERS ──────────────────────────────────────────────────
 
   void _clearUserData() {

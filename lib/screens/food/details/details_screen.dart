@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../components/floating_cart_button.dart';
 import '../../../constants.dart';
+import '../../../translations/app_translations.dart';
 import '../search/search_screen.dart';
 import 'components/featured_items.dart';
 import 'components/iteams.dart';
@@ -52,7 +53,7 @@ class _AvisSection extends StatelessWidget {
                       color: primaryColor, size: 18),
                   const SizedBox(width: 8),
                   Text(
-                    'Avis clients (${avecCommentaire.length})',
+                    '${tr('customer_reviews')} (${avecCommentaire.length})',
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium

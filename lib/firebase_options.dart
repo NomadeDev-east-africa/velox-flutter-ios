@@ -59,11 +59,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAar64MgVfbC2Ql4Y0sMDmIYRawn-yyWjI',
-    appId: '1:91637120258:ios:2f17a9cc7df5aa3659d61b',
+    appId: '1:91637120258:ios:4626636d3ca3a96759d61b',
     messagingSenderId: '91637120258',
     projectId: 'nomade253-478a9',
     storageBucket: 'nomade253-478a9.firebasestorage.app',
-    iosClientId: '91637120258-in84j6f5hkintdu76haj4s3jts0sgaca.apps.googleusercontent.com',
-    iosBundleId: 'com.example.nomadeClient',
+    iosClientId: '91637120258-5q0fa6o0oapl6aema8ss0tj3vauona78.apps.googleusercontent.com',
+    iosBundleId: 'dj.velox.client',
   );
 }

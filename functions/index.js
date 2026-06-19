@@ -1045,12 +1045,28 @@ exports.onOrderCreated = onDocumentCreated("orders/{orderId}", async (event) => 
     }
 
     const deliveryFee = order.deliveryFee ?? 500;
-    const realTotal   = realSubtotal + deliveryFee;
 
-    if (!priceValid || realTotal !== order.total) {
+    // ── Fidélité : réduction plafonnée aux frais de livraison ──
+    const POINT_VALUE  = 15;
+    const maxPoints    = Math.floor(deliveryFee / POINT_VALUE);
+    const cappedPoints = Math.min(
+      Math.max(0, Math.floor(order.pointsUsed ?? 0)),
+      maxPoints,
+    );
+    const discount  = cappedPoints * POINT_VALUE;
+    const realTotal = realSubtotal + deliveryFee - discount;
+
+    const needsFix = !priceValid
+      || realTotal !== order.total
+      || discount !== (order.discount ?? 0)
+      || cappedPoints !== (order.pointsUsed ?? 0);
+
+    if (needsFix) {
       console.warn(`[validatePrices] ${orderId} — correction: ${order.total} → ${realTotal} FDJ`);
       await snap.ref.update({
         subtotal:       realSubtotal,
+        pointsUsed:     cappedPoints,
+        discount:       discount,
         total:          realTotal,
         priceValidated: true,
         updatedAt:      FieldValue.serverTimestamp(),
@@ -1276,7 +1292,9 @@ exports.sendOrderReadyNotifications = onCall(async (request) => {
       try {
         await getFirestore().collection("restaurants").doc(order.restaurantId).update({
           totalOrders:  FieldValue.increment(1),
-          totalRevenue: FieldValue.increment(order.total || 0),
+          // Le restaurant touche le prix PLEIN : la réduction fidélité est
+          // une remise plateforme sur la livraison, pas une perte restaurant.
+          totalRevenue: FieldValue.increment((order.total || 0) + (order.discount || 0)),
           updatedAt:    FieldValue.serverTimestamp(),
         });
         console.log(`✅ Stats restaurant ${order.restaurantId} mises à jour`);

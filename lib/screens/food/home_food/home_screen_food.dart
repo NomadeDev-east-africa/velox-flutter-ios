@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:nomade_client/models/menu_item.dart';
 import 'package:nomade_client/models/restaurant.dart';
 import 'package:nomade_client/screens/food/details/details_screen.dart';
 import 'package:nomade_client/screens/food/featured/featured_screen.dart';
+import 'package:nomade_client/screens/food/search/food_search_screen.dart';
 import 'package:nomade_client/services/menu_service.dart';
 import 'package:nomade_client/services/restaurant_service.dart';
 import 'package:nomade_client/translations/app_translations.dart';
@@ -88,7 +90,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 20),
-                  Icon(Icons.shopping_cart_outlined, color: c.primary, size: 22),
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const FoodSearchScreen(),
+                      ),
+                    ),
+                    child: Icon(Icons.search, color: c.primary, size: 22),
+                  ),
                 ],
               ),
             ),
@@ -194,6 +204,131 @@ Widget _sectionHeader(String title, {required VoidCallback onTap, required AppCo
 }
 
 // ════════════════════════════════════════════════════════════
+// AUTO-SCROLL CAROUSEL — défilement auto + swipe manuel + dots
+// ════════════════════════════════════════════════════════════
+
+class _AutoScrollCarousel extends StatefulWidget {
+  final int itemCount;
+  final double height;
+  final double viewportFraction;
+  final IndexedWidgetBuilder itemBuilder;
+  final AppColors c;
+
+  const _AutoScrollCarousel({
+    required this.itemCount,
+    required this.height,
+    required this.viewportFraction,
+    required this.itemBuilder,
+    required this.c,
+  });
+
+  @override
+  State<_AutoScrollCarousel> createState() => _AutoScrollCarouselState();
+}
+
+class _AutoScrollCarouselState extends State<_AutoScrollCarousel> {
+  late final PageController _pageController;
+  Timer? _autoTimer;
+  Timer? _resumeTimer;
+  int _currentPage = 0;
+  bool _paused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: widget.viewportFraction);
+    _startAutoScroll();
+  }
+
+  void _startAutoScroll() {
+    _autoTimer?.cancel();
+    if (widget.itemCount <= 1) return;
+    _autoTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (_paused || !_pageController.hasClients) return;
+      final next = (_currentPage + 1) % widget.itemCount;
+      _pageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  // L'utilisateur a interagi : on met en pause puis on reprend après 5 s.
+  void _pauseTemporarily() {
+    _paused = true;
+    _resumeTimer?.cancel();
+    _resumeTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) _paused = false;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _AutoScrollCarousel old) {
+    super.didUpdateWidget(old);
+    if (old.itemCount != widget.itemCount) {
+      if (_currentPage >= widget.itemCount) _currentPage = 0;
+      _startAutoScroll();
+    }
+  }
+
+  @override
+  void dispose() {
+    _autoTimer?.cancel();
+    _resumeTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.c;
+    return Column(
+      children: [
+        SizedBox(
+          height: widget.height,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              // dragDetails != null ⇒ scroll initié par l'utilisateur (pas auto)
+              if (n is ScrollStartNotification && n.dragDetails != null) {
+                _pauseTemporarily();
+              }
+              return false;
+            },
+            child: PageView.builder(
+              controller: _pageController,
+              padEnds: false,
+              onPageChanged: (i) => setState(() => _currentPage = i),
+              itemCount: widget.itemCount,
+              itemBuilder: widget.itemBuilder,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          alignment: WrapAlignment.center,
+          children: List.generate(
+            widget.itemCount,
+            (i) => AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: _currentPage == i ? 20 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: _currentPage == i
+                    ? c.primary
+                    : c.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
 // CATEGORIES — horizontal scroll, square tiles
 // ════════════════════════════════════════════════════════════
 
@@ -287,94 +422,88 @@ class _CategoryRowState extends State<_CategoryRow> {
 
     if (_categoryMenus.isEmpty) return const SizedBox.shrink();
 
-    return SizedBox(
+    return _AutoScrollCarousel(
+      itemCount: _categoryKeys.length,
       height: 128,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: _categoryKeys.length,
-        itemBuilder: (context, i) {
-          final cat = _categoryKeys[i];
-          final menu = _categoryMenus[cat]!;
-          final restaurant = _categoryRestaurants[cat];
-          final imageUrl = menu.imageUrl;
-          final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+      viewportFraction: 0.42,
+      c: c,
+      itemBuilder: (context, i) {
+        final cat = _categoryKeys[i];
+        final menu = _categoryMenus[cat]!;
+        final restaurant = _categoryRestaurants[cat];
+        final imageUrl = menu.imageUrl;
+        final hasImage = imageUrl != null && imageUrl.isNotEmpty;
 
-          return GestureDetector(
-            onTap: () {
-              if (restaurant != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => DetailsScreen(restaurant: restaurant)),
-                );
-              }
-            },
-            child: SizedBox(
-              width: 128,
-              height: 128,
-              child: Container(
-                margin: const EdgeInsets.only(right: 12),
-                color: c.surfaceLow,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (hasImage)
-                      CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.cover,
-                        memCacheWidth:
-                            (128 * MediaQuery.of(context).devicePixelRatio)
-                                .toInt(),
-                        placeholder: (_, _) => Container(color: c.surfaceLow),
-                        errorWidget: (_, _, _) => Container(
-                          color: c.surfaceHigh,
-                          child: Icon(Icons.fastfood,
-                              size: 32, color: c.onSurfaceVariant),
-                        ),
-                      )
-                    else
-                      Container(
-                        color: c.surfaceHigh,
-                        child: Icon(Icons.fastfood,
-                            size: 32, color: c.onSurfaceVariant),
-                      ),
-                    // Gradient overlay — toujours sombre pour lisibilité du texte
-                    const Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Color(0xCC000000)],
-                          ),
-                        ),
+        return GestureDetector(
+          onTap: () {
+            if (restaurant != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => DetailsScreen(restaurant: restaurant)),
+              );
+            }
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            color: c.surfaceLow,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (hasImage)
+                  CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    memCacheWidth:
+                        (160 * MediaQuery.of(context).devicePixelRatio)
+                            .toInt(),
+                    placeholder: (_, _) => Container(color: c.surfaceLow),
+                    errorWidget: (_, _, _) => Container(
+                      color: c.surfaceHigh,
+                      child: Icon(Icons.fastfood,
+                          size: 32, color: c.onSurfaceVariant),
+                    ),
+                  )
+                else
+                  Container(
+                    color: c.surfaceHigh,
+                    child: Icon(Icons.fastfood,
+                        size: 32, color: c.onSurfaceVariant),
+                  ),
+                // Gradient overlay — toujours sombre pour lisibilité du texte
+                const Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Color(0xCC000000)],
                       ),
                     ),
-                    Positioned(
-                      left: 8,
-                      bottom: 8,
-                      right: 8,
-                      child: Text(
-                        cat.toUpperCase(),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 1,
-                          height: 1.2,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                Positioned(
+                  left: 8,
+                  bottom: 8,
+                  right: 8,
+                  child: Text(
+                    cat.toUpperCase(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 1,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -412,7 +541,7 @@ class _PromoBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '⏱️ Arrive avant ta prochaine série',
+                    '⏱️ Une appli faite pour vous',
                     style: GoogleFonts.spaceGrotesk(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -423,7 +552,7 @@ class _PromoBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Zéro frais caché. Zéro attente. Juste bon.',
+                    'Zéro frais caché. Zéro attente. Juste Excellent.',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       color: c.onPrimary.withValues(alpha: 0.8),
@@ -474,14 +603,13 @@ class _PopularList extends ConsumerWidget {
 
     if (popular.isEmpty) return const SizedBox.shrink();
 
-    return SizedBox(
+    return _AutoScrollCarousel(
+      itemCount: popular.length,
       height: 210,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: popular.length,
-        itemBuilder: (context, i) => _PopularCard(restaurant: popular[i], c: c),
-      ),
+      viewportFraction: 0.5,
+      c: c,
+      itemBuilder: (context, i) =>
+          _PopularCard(restaurant: popular[i], c: c),
     );
   }
 }

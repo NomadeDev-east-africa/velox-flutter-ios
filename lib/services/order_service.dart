@@ -37,32 +37,38 @@ class OrderService {
   }
 
   // Récupérer les commandes d'un utilisateur (20 plus récentes)
+  // ⚠️ Pas de orderBy('createdAt') côté Firestore : le champ peut être stocké
+  // en String ISO OU Timestamp selon l'app émettrice → orderBy regrouperait par
+  // type (historique partiel) et exigerait un index. Tri client après lecture.
   Future<List<Order>> getUserOrders(String userId) async {
     try {
       final snapshot = await _firestore
           .collection(_collection)
           .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .limit(20)
           .get();
 
-      return snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
+      final orders =
+          snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
+      orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return orders.take(20).toList();
     } catch (e) {
       debugPrint('❌ [OrderService] Erreur récupération commandes utilisateur: $e');
       return [];
     }
   }
 
-  // Stream des commandes d'un utilisateur (20 plus récentes)
+  // Stream des commandes d'un utilisateur (20 plus récentes) — tri client
   Stream<List<Order>> streamUserOrders(String userId) {
     return _firestore
         .collection(_collection)
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
-        .limit(20)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList());
+        .map((snapshot) {
+      final orders =
+          snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
+      orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return orders.take(20).toList();
+    });
   }
 
   // Récupérer les commandes d'un restaurant (20 plus récentes)

@@ -84,6 +84,12 @@ final matchValidator = MatchValidator(errorText: 'passwords do not match');
 final phoneNumberValidator = MinLengthValidator(10,
     errorText: 'Phone Number must be at least 10 digits long');
 
+// ==================== FIDÉLITÉ ====================
+// 1 commande/course complétée = kPointsPerOrder points
+// 1 point = kPointValue FDJ de réduction sur les frais de livraison
+const int kPointsPerOrder = 10;
+const int kPointValue = 15;
+
 // ==================== TEXTE COMMUN ====================
 class KOrText extends StatelessWidget {
   const KOrText({super.key});

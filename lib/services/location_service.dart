@@ -449,8 +449,12 @@ class LocationService {
       }
 
       debugPrint('🚗 Calcul itinéraire OpenRouteService');
+      // ⚠️ Endpoint /geojson : renvoie la géométrie en coordonnées GeoJSON.
+      // L'endpoint de base /driving-car renvoie une polyline ENCODÉE (String),
+      // que l'ancien code tentait de lire comme un Map → exception → fallback
+      // ligne droite traversant bâtiments/rivières. Le suffixe /geojson corrige ça.
       final url = Uri.parse(
-          'https://api.openrouteservice.org/v2/directions/driving-car');
+          'https://api.openrouteservice.org/v2/directions/driving-car/geojson');
 
       final response = await http
           .post(
@@ -470,22 +474,37 @@ class LocationService {
           .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        final data  = jsonDecode(response.body);
-        final route = data['routes'][0];
+        final data     = jsonDecode(response.body) as Map<String, dynamic>;
+        final features = data['features'] as List?;
 
-        final geometry    = route['geometry']['coordinates'] as List;
-        final coordinates = geometry
-            .map((coord) => LocationData(
-                  latitude: coord[1] as double,
-                  longitude: coord[0] as double,
-                ))
-            .toList();
+        if (features != null && features.isNotEmpty) {
+          final feature  = features.first as Map<String, dynamic>;
+          final geometry = feature['geometry']['coordinates'] as List;
 
-        return RouteResult(
-          coordinates: coordinates,
-          distance:    route['summary']['distance'] / 1000,
-          duration:    (route['summary']['duration'] / 60).round(),
-        );
+          final coordinates = geometry
+              .map((coord) => LocationData(
+                    latitude:  (coord[1] as num).toDouble(),
+                    longitude: (coord[0] as num).toDouble(),
+                  ))
+              .toList();
+
+          final summary = (feature['properties']
+                  as Map<String, dynamic>?)?['summary']
+              as Map<String, dynamic>?;
+          final distanceM = (summary?['distance'] as num?)?.toDouble() ?? 0;
+          final durationS = (summary?['duration'] as num?)?.toDouble() ?? 0;
+
+          if (coordinates.length >= 2) {
+            return RouteResult(
+              coordinates: coordinates,
+              distance:    distanceM / 1000,
+              duration:    (durationS / 60).round(),
+            );
+          }
+        }
+        debugPrint('⚠️ Géométrie ORS vide — fallback ligne droite');
+      } else {
+        debugPrint('⚠️ ORS HTTP ${response.statusCode} — fallback ligne droite');
       }
     } catch (e) {
       debugPrint('⚠️ Route fallback: $e');

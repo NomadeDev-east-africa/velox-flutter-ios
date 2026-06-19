@@ -37,3 +37,27 @@ final orderStatsProvider = StreamProvider.autoDispose<OrderStats>((ref) {
     return OrderStats(totalOrders: count, totalSpent: total);
   });
 });
+
+/// Points DÉPENSÉS, stockés sur le doc `users/{uid}.redeemedPoints`.
+/// Incrémentés à chaque réduction appliquée au checkout.
+final redeemedPointsProvider = StreamProvider.autoDispose<int>((ref) {
+  final userId = ref.watch(userNotifierProvider).userId;
+  if (userId == null) return Stream.value(0);
+
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .snapshots()
+      .map((doc) => ((doc.data()?['redeemedPoints'] ?? 0) as num).toInt());
+});
+
+/// Solde DISPONIBLE = gagnés − dépensés (jamais négatif).
+final availablePointsProvider = Provider.autoDispose<int>((ref) {
+  final earned =
+      ref.watch(orderStatsProvider).whenOrNull(data: (s) => s.loyaltyPoints) ??
+          0;
+  final redeemed =
+      ref.watch(redeemedPointsProvider).whenOrNull(data: (r) => r) ?? 0;
+  final available = earned - redeemed;
+  return available < 0 ? 0 : available;
+});

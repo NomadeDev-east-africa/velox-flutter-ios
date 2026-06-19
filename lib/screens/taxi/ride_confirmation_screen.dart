@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nomade_client/providers/all_providers.dart';
 import 'package:nomade_client/theme/app_colors.dart';
+import 'package:nomade_client/translations/app_translations.dart';
 import 'package:nomade_client/models/place.dart';
 import 'package:nomade_client/models/trip_details.dart';
 import 'package:nomade_client/models/ride_choice.dart';
@@ -29,7 +30,7 @@ class RideConfirmationScreen extends ConsumerStatefulWidget {
 
 class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen> {
 
-  String _selectedPaymentMethod = 'mobile_wallet';
+  String _selectedPaymentMethod = 'cash';
   late AppColors _c;
   late bool _isDark;
 
@@ -73,7 +74,7 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: _c.error),
+          SnackBar(content: Text('${tr('error')}: $e'), backgroundColor: _c.error),
         );
       }
     }
@@ -343,7 +344,7 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('DÉTAILS DE LA COURSE', style: _label()),
+              Text(tr('ride_details').toUpperCase(), style: _label()),
               Text(
                 'v1.0_ID',
                 style: GoogleFonts.spaceGrotesk(
@@ -364,13 +365,13 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
               children: [
                 _locationRow(
                   icon: Icons.radio_button_checked,
-                  label: 'ORIGINE',
+                  label: tr('origin').toUpperCase(),
                   value: widget.pickup.address ?? widget.pickup.name,
                 ),
                 const SizedBox(height: 16),
                 _locationRow(
                   icon: Icons.location_on,
-                  label: 'DESTINATION',
+                  label: tr('destination').toUpperCase(),
                   value: widget.destination.address ?? widget.destination.name,
                 ),
               ],
@@ -384,14 +385,14 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
               Expanded(
                 child: _metricRow(
                   icon: Icons.schedule_outlined,
-                  label: 'ESTIMATION',
+                  label: tr('estimation').toUpperCase(),
                   value: '${widget.tripDetails.duration} MIN',
                 ),
               ),
               Expanded(
                 child: _metricRow(
                   icon: Icons.route_outlined,
-                  label: 'DISTANCE',
+                  label: tr('distance').toUpperCase(),
                   value: '${widget.tripDetails.distance.toStringAsFixed(1)} KM',
                 ),
               ),
@@ -475,7 +476,7 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('PILOTE_ASSIGNÉ', style: _label()),
+                Text(tr('assigned_pilot').toUpperCase(), style: _label()),
                 const SizedBox(height: 4),
                 Text(
                   _carModel(widget.tripDetails.selectedRide).toUpperCase(),
@@ -503,7 +504,7 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('COÛT_TRANSACTIONNEL', style: _label()),
+          Text(tr('transaction_cost').toUpperCase(), style: _label()),
           const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -566,9 +567,11 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
 
   String _paymentLabel(String method) {
     switch (method) {
-      case 'cash': return 'ESPÈCES';
-      case 'card': return 'CARTE_BANCAIRE';
-      default:     return 'MOBILE_WALLET';
+      case 'cash':    return 'ESPÈCES';
+      case 'waafi':   return 'WAAFI';
+      case 'd_money': return 'D-MONEY';
+      case 'cac_pay': return 'CAC PAY';
+      default:        return method.toUpperCase();
     }
   }
 
@@ -609,7 +612,7 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'CONFIRMER',
+                        tr('confirm').toUpperCase(),
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
@@ -640,7 +643,7 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
         children: [
           const SizedBox(height: 20),
           Text(
-            'MOYEN DE PAIEMENT',
+            tr('payment_method').toUpperCase(),
             style: GoogleFonts.spaceGrotesk(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -649,10 +652,10 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
             ),
           ),
           const SizedBox(height: 12),
-          _paymentTile('mobile_wallet', 'Mobile Wallet',
-              Icons.account_balance_wallet, c),
-          _paymentTile('cash', 'Espèces', Icons.money, c),
-          _paymentTile('card', 'Carte Bancaire', Icons.credit_card, c),
+          _paymentTile('cash', tr('cash_label'), Icons.payments_outlined, c),
+          _paymentTile('waafi', 'Waafi', Icons.account_balance_wallet, c),
+          _paymentTile('d_money', 'D-Money', Icons.account_balance_wallet, c),
+          _paymentTile('cac_pay', 'CAC Pay', Icons.account_balance_wallet, c),
           const SizedBox(height: 32),
         ],
       ),

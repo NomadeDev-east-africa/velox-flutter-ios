@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../models/menu_item.dart';
+import '../../../models/option_group.dart';
+import '../../../models/option_selection.dart';
 import '../../../models/restaurant.dart';
 import '../../../models/extra_option.dart';
 import '../../../models/sauce_option.dart';
@@ -31,10 +33,33 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
   final List<ExtraOption> _extras   = [];
   final List<SauceOption> _sauces   = [];
 
+  /// Sélections par groupe (aligné sur `menuItem.optionGroups`).
+  /// Pour un groupe `single`, le Set contient 0 ou 1 index ; pour `multiple`, 0..N.
+  final List<Set<int>> _groupSelections = [];
+
+  List<OptionGroup> get _optionGroups => widget.menuItem.optionGroups;
+  bool get _isDataDriven => _optionGroups.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
-    _initializeExtrasAndSauces();
+    if (_isDataDriven) {
+      _initializeOptionGroups();
+    } else {
+      _initializeExtrasAndSauces();
+    }
+  }
+
+  /// Initialise les sélections data-driven. Présélectionne le 1er choix d'un
+  /// groupe `single + required` pour qu'un choix soit toujours valide.
+  void _initializeOptionGroups() {
+    for (final group in _optionGroups) {
+      final selected = <int>{};
+      if (group.isSingle && group.required && group.choices.isNotEmpty) {
+        selected.add(0);
+      }
+      _groupSelections.add(selected);
+    }
   }
 
   void _initializeExtrasAndSauces() {
@@ -61,12 +86,65 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
       _extras.where((e) => e.isSelected).fold(0, (s, e) => s + e.price);
   int get _saucesTotal =>
       _sauces.where((s) => s.isSelected).fold(0, (s, e) => s + e.price);
+
+  int get _optionsSurcharge => _isDataDriven
+      ? OptionSelection.surcharge(_optionGroups, _groupSelections)
+      : (_extrasTotal + _saucesTotal);
+
   int get _totalPrice =>
-      ((widget.menuItem.price + _extrasTotal + _saucesTotal) * _quantity).toInt();
+      ((widget.menuItem.price + _optionsSurcharge) * _quantity).toInt();
+
+  // ── SÉLECTION DATA-DRIVEN ───────────────────────────────────────────────────
+
+  void _toggleChoice(int groupIndex, int choiceIndex) {
+    final group = _optionGroups[groupIndex];
+    final selected = _groupSelections[groupIndex];
+    setState(() {
+      if (group.isSingle) {
+        // Radio : un seul choix. Si requis, on ne peut pas désélectionner.
+        if (selected.contains(choiceIndex) && !group.required) {
+          selected.clear();
+        } else {
+          selected
+            ..clear()
+            ..add(choiceIndex);
+        }
+      } else {
+        // Checkbox : 0..N choix.
+        if (selected.contains(choiceIndex)) {
+          selected.remove(choiceIndex);
+        } else {
+          selected.add(choiceIndex);
+        }
+      }
+    });
+  }
+
+  /// Premier groupe requis sans sélection, ou `null` si tout est valide.
+  OptionGroup? _firstUnsatisfiedRequiredGroup() {
+    for (var gi = 0; gi < _optionGroups.length; gi++) {
+      final group = _optionGroups[gi];
+      if (group.required && _groupSelections[gi].isEmpty) return group;
+    }
+    return null;
+  }
 
   // ── LOGIQUE PANIER ────────────────────────────────────────────────────────
 
   void _proceedAddToCart() {
+    if (_isDataDriven) {
+      final missing = _firstUnsatisfiedRequiredGroup();
+      if (missing != null) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+            content: Text('Veuillez choisir : ${missing.name}'),
+            backgroundColor: _c.surfaceHigh,
+            behavior: SnackBarBehavior.floating,
+          ));
+        return;
+      }
+    }
     final cart = ref.read(cartProvider);
     if (cart.isDifferentRestaurant(widget.restaurant.id)) {
       _showDifferentRestaurantDialog(cart.selectedRestaurant?.name);
@@ -128,6 +206,19 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
     if (cart.selectedRestaurant == null) {
       ref.read(cartProvider.notifier).setRestaurant(widget.restaurant);
     }
+
+    // Reverser les choix dans extras/sauces pour rester lisible par l'app resto.
+    final List<ExtraOption> extras;
+    final List<SauceOption> sauces;
+    if (_isDataDriven) {
+      final mapping = OptionSelection.toCart(_optionGroups, _groupSelections);
+      extras = mapping.extras;
+      sauces = mapping.sauces;
+    } else {
+      extras = _extras.where((e) => e.isSelected).toList();
+      sauces = _sauces.where((s) => s.isSelected).toList();
+    }
+
     final orderItem = OrderItem(
       menuId:      widget.menuItem.id,
       name:        widget.menuItem.name,
@@ -136,8 +227,8 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
       category:    widget.menuItem.category,
       basePrice:   widget.menuItem.price.toInt(),
       quantity:    _quantity,
-      extras:      _extras.where((e) => e.isSelected).toList(),
-      sauces:      _sauces.where((s) => s.isSelected).toList(),
+      extras:      extras,
+      sauces:      sauces,
     );
     ref.read(cartProvider.notifier).addItem(orderItem);
   }
@@ -421,6 +512,87 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
     );
   }
 
+  // ── RENDU DATA-DRIVEN ───────────────────────────────────────────────────────
+
+  Widget _buildGroupSection(int groupIndex) {
+    final group = _optionGroups[groupIndex];
+    final title = group.name.trim().isEmpty
+        ? 'OPTIONS'
+        : group.name.toUpperCase();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(title, required: group.required),
+        ...List.generate(
+          group.choices.length,
+          (ci) => _buildChoiceRow(groupIndex, ci),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChoiceRow(int groupIndex, int choiceIndex) {
+    final group    = _optionGroups[groupIndex];
+    final choice   = group.choices[choiceIndex];
+    final selected = _groupSelections[groupIndex].contains(choiceIndex);
+    final isSingle = group.isSingle;
+
+    return GestureDetector(
+      onTap: () => _toggleChoice(groupIndex, choiceIndex),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: _c.outlineVariant.withValues(alpha: 0.2)),
+          ),
+          color: selected ? _c.primary.withValues(alpha: 0.05) : Colors.transparent,
+        ),
+        child: Row(
+          children: [
+            // Radio (cercle) pour single, checkbox (carré) pour multiple.
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: isSingle ? BoxShape.circle : BoxShape.rectangle,
+                color: selected ? _c.primary : Colors.transparent,
+                border: Border.all(
+                  color: selected ? _c.primary : _c.outlineVariant,
+                  width: 1.5,
+                ),
+              ),
+              child: selected
+                  ? Icon(Icons.check, color: _c.onPrimary, size: 14)
+                  : null,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                choice.name.toUpperCase(),
+                style: TextStyle(
+                  color: selected ? _c.onSurface : _c.onSurfaceVariant,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+            Text(
+              choice.price > 0 ? '+ ${choice.price} FDJ' : 'INCLUS',
+              style: TextStyle(
+                color: choice.price > 0
+                    ? (selected ? _c.primary : _c.onSurfaceVariant)
+                    : _c.onSurfaceVariant,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSauceGrid() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -571,10 +743,15 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
                 children: [
                   _buildHeroImage(),
                   _buildPriceAndQuantity(),
-                  _buildSectionHeader('CHOIX DES EXTRAS', required: true),
-                  ..._extras.map(_buildExtraItem),
-                  _buildSectionHeader('CHOIX DES SAUCES'),
-                  _buildSauceGrid(),
+                  if (_isDataDriven)
+                    ...List.generate(
+                        _optionGroups.length, _buildGroupSection)
+                  else ...[
+                    _buildSectionHeader('CHOIX DES EXTRAS', required: true),
+                    ..._extras.map(_buildExtraItem),
+                    _buildSectionHeader('CHOIX DES SAUCES'),
+                    _buildSauceGrid(),
+                  ],
                   const SizedBox(height: 24),
                 ],
               ),

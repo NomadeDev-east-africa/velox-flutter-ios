@@ -163,7 +163,7 @@ class MockTaxiData {
       id: 'taxi_van',
       name: 'Taxi Van',
       type: RideType.van,
-      imagePath: 'assets/images/taxiprobox.png',
+      imagePath: 'assets/vehicule/taxiprobox.png',
       seats: 7,
       basePrice: 400,
       pricePerKm: 80,

@@ -10,6 +10,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'constants.dart';
 import 'translations/app_translations.dart';
 import 'screens/onboarding/onboarding_screen.dart';
@@ -110,6 +111,8 @@ void main() {
         HiveService.init(),
         LocalCache.init(),
         AppTranslations.init(),
+        // Données de locale pour DateFormat(..., 'fr_FR') (écran historique)
+        initializeDateFormatting('fr_FR', null),
       ]);
 
       runApp(
@@ -370,6 +373,9 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final themeState = ref.watch(themeNotifierProvider);
+    // Reconstruit le sous-arbre quand la langue change (le système tr() est
+    // statique : sans ce rebuild keyé, les écrans gardent l'ancienne langue).
+    final language = ref.watch(languageNotifierProvider).language;
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -474,7 +480,10 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           ),
         ),
       ),
-      home: const AuthWrapper(),
+      home: KeyedSubtree(
+        key: ValueKey('lang_$language'),
+        child: const AuthWrapper(),
+      ),
     );
   }
 }

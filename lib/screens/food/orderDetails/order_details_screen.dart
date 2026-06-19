@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:nomade_client/constants.dart';
+import 'package:nomade_client/translations/app_translations.dart';
 import 'package:nomade_client/models/order_item.dart';
 import 'package:nomade_client/providers/all_providers.dart';
 import 'package:nomade_client/screens/food/food_tracking/delivery_address_picker_screen.dart';
@@ -22,8 +24,8 @@ class OrderDetailsScreen extends ConsumerStatefulWidget {
 
 class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   bool _isProcessing = false;
-  String _selectedPaymentMethod = 'card';
-  final _promoController = TextEditingController();
+  String _selectedPaymentMethod = 'cash';
+  int _pointsApplied = 0;
 
   String? _deliveryAddress;
   String? _deliveryAddressName;
@@ -39,12 +41,6 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   late Color _textPrimary;
   late Color _textSecondary;
   late Color _disabledBg;
-
-  @override
-  void dispose() {
-    _promoController.dispose();
-    super.dispose();
-  }
 
   // ════════════════════════════════════════════════════════════
   // BUILD
@@ -68,6 +64,13 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
 
     if (cart.isEmpty) return _buildEmptyCart();
 
+    // ── Fidélité : points utilisables plafonnés aux frais de livraison ──
+    final available = ref.watch(availablePointsProvider);
+    final maxByDelivery = cart.deliveryFee ~/ kPointValue;
+    final maxUsable = available < maxByDelivery ? available : maxByDelivery;
+    final pointsApplied = _pointsApplied.clamp(0, maxUsable);
+    final discount = pointsApplied * kPointValue;
+
     return Scaffold(
       backgroundColor: _bg,
       body: Column(
@@ -85,9 +88,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                   const SizedBox(height: 24),
                   _buildPaymentSection(),
                   const SizedBox(height: 24),
-                  _buildPromoSection(),
+                  _buildPointsSection(available, maxUsable, pointsApplied),
                   const SizedBox(height: 24),
-                  _buildSummarySection(cart),
+                  _buildSummarySection(cart, pointsApplied, discount),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -121,7 +124,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Checkout',
+                  tr('checkout'),
                   style: TextStyle(
                     color: _accent,
                     fontWeight: FontWeight.w700,
@@ -161,13 +164,13 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Delivery Address',
+              tr('delivery_address'),
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary),
             ),
             GestureDetector(
               onTap: _pickAddress,
               child: Text(
-                'CHANGE',
+                tr('change').toUpperCase(),
                 style: TextStyle(
                   color: _accent,
                   fontWeight: FontWeight.bold,
@@ -220,7 +223,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                                       color: Colors.brown.shade300, size: 28),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Appuyer pour choisir sur la carte',
+                                    tr('tap_to_pick_map'),
                                     style: TextStyle(
                                         color: Colors.brown.shade400,
                                         fontSize: 11),
@@ -237,7 +240,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _deliveryAddressName ?? 'Aucune adresse sélectionnée',
+                        _deliveryAddressName ?? tr('no_address_selected'),
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 14, color: _textPrimary),
                       ),
@@ -259,7 +262,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                               size: 13, color: _textSecondary),
                           const SizedBox(width: 4),
                           Text(
-                            'Est. Delivery: 25-35 mins',
+                            tr('est_delivery'),
                             style: TextStyle(
                                 color: _textSecondary, fontSize: 12),
                           ),
@@ -285,7 +288,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Your Selection',
+          tr('your_selection'),
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary),
         ),
         const SizedBox(height: 12),
@@ -339,7 +342,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        'Qty: ${item.quantity}',
+                        '${tr('qty')}: ${item.quantity}',
                         style: TextStyle(
                             color: _textSecondary, fontSize: 12),
                       ),
@@ -371,7 +374,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                 onTap: () =>
                     ref.read(cartProvider.notifier).removeItem(item),
                 child: Text(
-                  'Retirer',
+                  tr('remove'),
                   style: TextStyle(color: Colors.red[300], fontSize: 11),
                 ),
               ),
@@ -409,24 +412,17 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
 
   Widget _buildPaymentSection() {
     final methods = [
-      {
-        'value': 'card',
-        'label': 'Carte bancaire',
-        'icon': Icons.credit_card
-      },
-      {
-        'value': 'mobile_wallet',
-        'label': 'Mobile Money',
-        'icon': Icons.smartphone
-      },
-      {'value': 'cash', 'label': 'Espèces', 'icon': Icons.money},
+      {'value': 'cash', 'label': tr('cash_label'), 'icon': Icons.payments_outlined},
+      {'value': 'waafi', 'label': 'Waafi', 'icon': Icons.account_balance_wallet},
+      {'value': 'd_money', 'label': 'D-Money', 'icon': Icons.account_balance_wallet},
+      {'value': 'cac_pay', 'label': 'CAC Pay', 'icon': Icons.account_balance_wallet},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Payment Method',
+          tr('payment_method'),
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _textPrimary),
         ),
         const SizedBox(height: 12),
@@ -491,48 +487,95 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   }
 
   // ════════════════════════════════════════════════════════════
-  // PROMO CODE
+  // POINTS FIDÉLITÉ
   // ════════════════════════════════════════════════════════════
 
-  Widget _buildPromoSection() {
+  Widget _buildPointsSection(int available, int maxUsable, int pointsApplied) {
+    final hasPoints = available > 0;
+    final canApply = maxUsable > 0;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 4, 6, 4),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: TextField(
-              controller: _promoController,
-              style: const TextStyle(fontSize: 14),
-              decoration: const InputDecoration(
-                hintText: 'Promo Code',
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                border: InputBorder.none,
-                isDense: true,
+          Row(
+            children: [
+              Icon(Icons.stars_rounded, color: _accent, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                tr('loyalty_points'),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: _textPrimary),
               ),
-            ),
+              const Spacer(),
+              Text(
+                '$available pts',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: _accent, fontSize: 14),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () =>
-                _showSnack('Code promo : fonctionnalité bientôt disponible'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _accent,
-              foregroundColor: _onAccent,
-              minimumSize: const Size(0, 44),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              elevation: 0,
-            ),
-            child: const Text('Apply',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text(
+            hasPoints
+                ? '1 point = $kPointValue FDJ · ${tr('usable_on_delivery')}'
+                : tr('earn_points_hint'),
+            style: TextStyle(color: _textSecondary, fontSize: 12),
           ),
+          if (hasPoints) ...[
+            const SizedBox(height: 14),
+            if (pointsApplied > 0)
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '$pointsApplied ${tr('points_applied')} · −${pointsApplied * kPointValue} FDJ',
+                      style: TextStyle(
+                          color: _accent,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _pointsApplied = 0),
+                    child: Text(tr('remove'),
+                        style: TextStyle(color: Colors.red[300], fontSize: 12)),
+                  ),
+                ],
+              )
+            else
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: canApply
+                      ? () => setState(() => _pointsApplied = maxUsable)
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _accent,
+                    foregroundColor: _onAccent,
+                    minimumSize: const Size(0, 44),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
+                    disabledBackgroundColor: _disabledBg,
+                    disabledForegroundColor: _textSecondary,
+                  ),
+                  child: Text(
+                    canApply
+                        ? '${tr('use')} $maxUsable ${tr('points_short')} (−${maxUsable * kPointValue} FDJ)'
+                        : tr('amount_too_low'),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );
@@ -542,7 +585,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   // SUMMARY
   // ════════════════════════════════════════════════════════════
 
-  Widget _buildSummarySection(CartState cart) {
+  Widget _buildSummarySection(
+      CartState cart, int pointsApplied, int discount) {
+    final total = cart.total - discount;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -551,18 +596,23 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       ),
       child: Column(
         children: [
-          _summaryRow('Subtotal', '${cart.subtotal} FDJ'),
+          _summaryRow(tr('subtotal'), '${cart.subtotal} FDJ'),
           const SizedBox(height: 10),
-          _summaryRow('Delivery Fee', '${cart.deliveryFee} FDJ'),
+          _summaryRow(tr('delivery_fee'), '${cart.deliveryFee} FDJ'),
+          if (discount > 0) ...[
+            const SizedBox(height: 10),
+            _summaryRow(
+                '${tr('delivery_discount')} ($pointsApplied ${tr('points_short')})', '−$discount FDJ'),
+          ],
           const Divider(height: 24, color: Color(0xFFE0C4B4)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Total',
+              Text(tr('total'),
                   style: TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 17, color: _textPrimary)),
               Text(
-                '${cart.total} FDJ',
+                '$total FDJ',
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
@@ -622,8 +672,8 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                     children: [
                       Text(
                         hasAddress
-                            ? 'Place Order'
-                            : 'Choisissez une adresse',
+                            ? tr('place_order')
+                            : tr('choose_an_address'),
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -659,11 +709,11 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                     size: 80, color: _accent.withValues(alpha: 0.6)),
               ),
               const SizedBox(height: 24),
-              Text('Votre panier est vide',
+              Text(tr('cart_empty'),
                   style: TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold, color: _textPrimary)),
               const SizedBox(height: 8),
-              Text('Ajoutez des plats pour continuer',
+              Text(tr('add_dishes_continue'),
                   style: TextStyle(fontSize: 14, color: _textSecondary)),
               const SizedBox(height: 32),
               SizedBox(
@@ -678,8 +728,8 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                         borderRadius: BorderRadius.circular(28)),
                     elevation: 0,
                   ),
-                  child: const Text('Retour aux restaurants',
-                      style: TextStyle(
+                  child: Text(tr('back_to_restaurants'),
+                      style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
               ),
@@ -698,18 +748,18 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      _showSnack('Vous devez être connecté pour commander',
+      _showSnack(tr('must_login_order'),
           backgroundColor: Colors.red);
       return;
     }
 
     final cart = ref.read(cartProvider);
     if (cart.isEmpty) {
-      _showSnack('Votre panier est vide', backgroundColor: Colors.orange);
+      _showSnack(tr('cart_empty'), backgroundColor: Colors.orange);
       return;
     }
     if (_deliveryAddressName == null || _deliveryLocation == null) {
-      _showSnack('Veuillez choisir une adresse de livraison',
+      _showSnack(tr('please_choose_address'),
           backgroundColor: Colors.orange);
       return;
     }
@@ -730,13 +780,14 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
             addressDetails: _deliveryAddress,
             customerName: customerName,
             customerPhone: customerPhone,
+            pointsUsed: _pointsApplied,
           );
 
       if (!mounted) return;
 
       if (orderId == null) {
         setState(() => _isProcessing = false);
-        _showSnack('Erreur lors de la création de la commande',
+        _showSnack(tr('order_creation_error'),
             backgroundColor: Colors.red);
         return;
       }
@@ -751,7 +802,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessing = false);
-        _showSnack('Erreur: $e', backgroundColor: Colors.red);
+        _showSnack('${tr('error')}: $e', backgroundColor: Colors.red);
       }
     }
   }

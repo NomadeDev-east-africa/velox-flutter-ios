@@ -36,6 +36,12 @@ class Order {
   final String? cancellationReason;
   final int? estimatedPreparationTime;
 
+  // ─── Fidélité ────────────────────────────────────────────────
+  /// Points fidélité utilisés en réduction sur cette commande.
+  final int pointsUsed;
+  /// Réduction appliquée (FDJ) = pointsUsed × kPointValue.
+  final int discount;
+
   // ─── Statuts ─────────────────────────────────────────────────
 
   static const String statusPending    = 'pending';
@@ -73,13 +79,15 @@ class Order {
     this.cancelledAt,
     this.cancellationReason,
     this.estimatedPreparationTime,
+    this.pointsUsed = 0,
+    this.discount = 0,
   });
 
   // ─── Getters calculés ────────────────────────────────────────
 
   int get itemCount  => items.fold(0, (acc, item) => acc + item.quantity);
   int get subtotal   => items.fold(0, (acc, item) => acc + item.totalPrice);
-  int get total      => subtotal + deliveryFee;
+  int get total      => subtotal + deliveryFee - discount;
 
   bool get canBeCancelled =>
       status == statusPending ||
@@ -116,6 +124,8 @@ class Order {
       'itemCount': itemCount,
       'subtotal': subtotal,
       'deliveryFee': deliveryFee,
+      'pointsUsed': pointsUsed,
+      'discount': discount,
       'total': total,
       'status': status,
       'paymentMethod': paymentMethod,
@@ -149,6 +159,21 @@ class Order {
     return map;
   }
 
+  /// Tolère les timestamps stockés en `Timestamp`, `String` ISO 8601 ou `int` (ms).
+  /// Les commandes de l'écosystème stockent souvent les dates en chaînes ISO,
+  /// d'où le crash `String is not a subtype of Timestamp` avec un cast direct.
+  static Timestamp? _parseTs(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value;
+    if (value is DateTime) return Timestamp.fromDate(value);
+    if (value is int) return Timestamp.fromMillisecondsSinceEpoch(value);
+    if (value is String) {
+      final dt = DateTime.tryParse(value);
+      if (dt != null) return Timestamp.fromDate(dt);
+    }
+    return null;
+  }
+
   factory Order.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
@@ -168,20 +193,22 @@ class Order {
               .toList()
           : [],
       deliveryFee: data['deliveryFee'] ?? 500,
+      pointsUsed: ((data['pointsUsed'] ?? 0) as num).toInt(),
+      discount: ((data['discount'] ?? 0) as num).toInt(),
       status: data['status'] ?? statusPending,
       paymentMethod: data['paymentMethod'] ?? 'cash',
       deliveryAddress: data['deliveryAddress'] ?? '',
       deliveryLocation: data['deliveryLocation'] as GeoPoint?,
       addressDetails: data['addressDetails'],
-      createdAt: data['createdAt'] ?? Timestamp.now(),
-      updatedAt: data['updatedAt'] ?? Timestamp.now(),
+      createdAt: _parseTs(data['createdAt']) ?? Timestamp.now(),
+      updatedAt: _parseTs(data['updatedAt']) ?? Timestamp.now(),
       deliveryDriverId: data['deliveryDriverId'],
       deliveryDriverName: data['deliveryDriverName'],
-      acceptedAt: data['acceptedAt'] as Timestamp?,
-      readyAt: data['readyAt'] as Timestamp?,
-      pickedUpAt: data['pickedUpAt'] as Timestamp?,
-      deliveredAt: data['deliveredAt'] as Timestamp?,
-      cancelledAt: data['cancelledAt'] as Timestamp?,
+      acceptedAt: _parseTs(data['acceptedAt']),
+      readyAt: _parseTs(data['readyAt']),
+      pickedUpAt: _parseTs(data['pickedUpAt']),
+      deliveredAt: _parseTs(data['deliveredAt']),
+      cancelledAt: _parseTs(data['cancelledAt']),
       cancellationReason: data['cancellationReason'],
       estimatedPreparationTime: data['estimatedPreparationTime'],
     );
@@ -205,6 +232,8 @@ class Order {
       'customerPhone': customerPhone,
       'items': items.map((item) => item.toJson()).toList(),
       'deliveryFee': deliveryFee,
+      'pointsUsed': pointsUsed,
+      'discount': discount,
       'status': status,
       'paymentMethod': paymentMethod,
       'deliveryAddress': deliveryAddress,
@@ -264,6 +293,8 @@ class Order {
               .toList() ??
           [],
       deliveryFee: json['deliveryFee'] ?? 500,
+      pointsUsed: ((json['pointsUsed'] ?? 0) as num).toInt(),
+      discount: ((json['discount'] ?? 0) as num).toInt(),
       status: json['status'] ?? statusPending,
       paymentMethod: json['paymentMethod'] ?? 'cash',
       deliveryAddress: json['deliveryAddress'] ?? '',
@@ -313,6 +344,8 @@ class Order {
     Timestamp? cancelledAt,
     String? cancellationReason,
     int? estimatedPreparationTime,
+    int? pointsUsed,
+    int? discount,
   }) {
     return Order(
       id: id ?? this.id,
@@ -341,6 +374,8 @@ class Order {
       cancellationReason: cancellationReason ?? this.cancellationReason,
       estimatedPreparationTime:
           estimatedPreparationTime ?? this.estimatedPreparationTime,
+      pointsUsed: pointsUsed ?? this.pointsUsed,
+      discount: discount ?? this.discount,
     );
   }
 

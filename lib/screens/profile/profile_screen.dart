@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nomade_client/providers/all_providers.dart';
 import 'package:nomade_client/theme/app_colors.dart';
+import 'package:nomade_client/translations/app_translations.dart';
 
 // Screens
 import 'edit_profile_screen.dart';
@@ -10,6 +11,7 @@ import 'adresses/add_address_screen.dart';
 import 'adresses/my_addresses_screen.dart';
 import '../history/order_history_screen.dart';
 import '../food/favorites/favorite_restaurants_screen.dart';
+import 'support/support_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -39,7 +41,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 24),
                 _buildSection(
                   themeState: themeState,
-                  title: 'Apparence & Personnalisation',
+                  title: tr('appearance_personalization'),
                   icon: Icons.palette,
                   children: [
                     _buildDarkModeToggle(themeState),
@@ -49,14 +51,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 _buildSection(
                   themeState: themeState,
-                  title: 'Informations personnelles',
+                  title: tr('personal_info'),
                   icon: Icons.person,
                   children: [
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.edit,
-                      title: 'Modifier mon profil',
-                      subtitle: 'Nom, téléphone, date de naissance',
+                      title: tr('edit_profile'),
+                      subtitle: tr('edit_profile_sub'),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -69,8 +71,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.email,
-                      title: userState.email ?? 'Email non disponible',
-                      subtitle: 'Adresse email',
+                      title: userState.email ?? tr('email_not_available'),
+                      subtitle: tr('email_address'),
                       trailing: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
@@ -78,7 +80,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'Vérifié',
+                          tr('verified'),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.green.shade700,
@@ -92,14 +94,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 _buildSection(
                   themeState: themeState,
-                  title: 'Mes adresses',
+                  title: tr('my_addresses'),
                   icon: Icons.location_on,
                   children: [
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.home,
-                      title: 'Gérer mes adresses',
-                      subtitle: 'Maison, Bureau, Autres',
+                      title: tr('manage_addresses'),
+                      subtitle: tr('address_types'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
@@ -113,8 +115,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.add_location_alt,
-                      title: 'Ajouter une adresse',
-                      subtitle: 'Nouvelle adresse',
+                      title: tr('add_address'),
+                      subtitle: tr('new_address'),
                       trailing: const Icon(Icons.chevron_right),
                       color: const Color(0xFFCE1126), // rouge
                       onTap: () {
@@ -133,14 +135,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 _buildSection(
                   themeState: themeState,
-                  title: 'Historique & Favoris',
+                  title: tr('history_favorites'),
                   icon: Icons.history,
                   children: [
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.receipt_long,
-                      title: 'Mes commandes',
-                      subtitle: 'Historique complet',
+                      title: tr('my_orders'),
+                      subtitle: tr('full_history'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(
                         context,
@@ -152,8 +154,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.favorite,
-                      title: 'Restaurants favoris',
-                      subtitle: '${ref.watch(favoritesNotifierProvider).length} restaurant(s)',
+                      title: tr('favorite_restaurants'),
+                      subtitle: '${ref.watch(favoritesNotifierProvider).length} ${tr('restaurants').toLowerCase()}',
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(
                         context,
@@ -167,21 +169,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 _buildSection(
                   themeState: themeState,
-                  title: 'Support & Légal',
+                  title: tr('support_legal'),
                   icon: Icons.help_outline,
                   children: [
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.help_center,
-                      title: 'Centre d\'aide',
+                      title: tr('help_center'),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {},
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SupportScreen(),
+                        ),
+                      ),
                     ),
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.info,
-                      title: 'À propos de Velox',
-                      subtitle: 'Version 1.0.0',
+                      title: tr('about_app'),
+                      subtitle: '${tr('version')} 1.0.0',
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {},
                     ),
@@ -190,20 +197,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 _buildSection(
                   themeState: themeState,
-                  title: 'Compte',
+                  title: tr('account'),
                   icon: Icons.security,
                   children: [
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.logout,
-                      title: 'Déconnexion',
+                      title: tr('logout'),
                       color: Colors.orange,
                       onTap: () => _showLogoutDialog(themeState),
                     ),
                     _buildMenuItem(
                       themeState: themeState,
                       icon: Icons.delete_forever,
-                      title: 'Supprimer mon compte',
+                      title: tr('delete_account'),
                       color: const Color(0xFFCE1126), // rouge
                       onTap: () => _showDeleteAccountDialog(themeState),
                     ),
@@ -428,7 +435,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ),
       title: Text(
-        'Mode sombre',
+        tr('dark_mode'),
         style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
@@ -436,7 +443,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ),
       subtitle: Text(
-        themeState.isDarkMode ? 'Activé' : 'Désactivé',
+        themeState.isDarkMode ? tr('enabled') : tr('disabled'),
         style: TextStyle(fontSize: 13, color: themeState.textSecondary),
       ),
       value: themeState.isDarkMode,
@@ -459,9 +466,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           size: 22,
         ),
       ),
-      title: const Text(
-        'Langue',
-        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+      title: Text(
+        tr('language'),
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
         langState.languageName,
@@ -512,30 +519,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final notifier = ref.read(notificationsNotifierProvider.notifier);
     return _buildSection(
       themeState: themeState,
-      title: 'Notifications',
+      title: tr('notifications'),
       icon: Icons.notifications,
       children: [
         _buildSwitchTile(
           themeState: themeState,
           icon: Icons.notifications_active,
-          title: 'Notifications push',
-          subtitle: 'Recevoir les alertes',
+          title: tr('push_notifications'),
+          subtitle: tr('receive_alerts'),
           value: notif.push,
           onChanged: notifier.setPush,
         ),
         _buildSwitchTile(
           themeState: themeState,
           icon: Icons.shopping_bag,
-          title: 'Suivi de commande',
-          subtitle: 'Mises à jour en temps réel',
+          title: tr('order_tracking'),
+          subtitle: tr('realtime_updates'),
           value: notif.orders,
           onChanged: notifier.setOrders,
         ),
         _buildSwitchTile(
           themeState: themeState,
           icon: Icons.local_offer,
-          title: 'Promotions',
-          subtitle: 'Offres et réductions',
+          title: tr('promotions'),
+          subtitle: tr('offers_discounts'),
           value: notif.promos,
           onChanged: notifier.setPromos,
         ),
@@ -567,7 +574,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Changer la photo',
+                tr('change_photo'),
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
@@ -584,7 +591,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   child: Icon(Icons.photo_camera, color: c.primary),
                 ),
-                title: Text('Prendre une photo',
+                title: Text(tr('take_photo'),
                     style: TextStyle(color: c.onSurface, fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -602,7 +609,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   child: Icon(Icons.photo_library, color: c.primary),
                 ),
-                title: Text('Choisir depuis la galerie',
+                title: Text(tr('choose_from_gallery'),
                     style: TextStyle(color: c.onSurface, fontWeight: FontWeight.w600)),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -625,9 +632,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await ref.read(userNotifierProvider.notifier).uploadProfilePhoto(image);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Photo de profil mise à jour'),
-            backgroundColor: Color(0xFF4CAF50),
+          SnackBar(
+            content: Text(tr('photo_updated')),
+            backgroundColor: const Color(0xFF4CAF50),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -651,7 +658,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Choisir la langue'),
+        title: Text(tr('choose_language')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -659,7 +666,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             _languageOption(langState, 'EN', 'English'),
             _languageOption(langState, 'SO', 'Somali'),
             _languageOption(langState, 'AR', 'العربية'),
-            _languageOption(langState, 'AF', 'Afar'),
+            _languageOption(langState, 'AA', 'Afar'),
           ],
         ),
       ),
@@ -702,16 +709,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: themeState.cardColor,
-        title: Text('Déconnexion',
+        title: Text(tr('logout'),
             style: TextStyle(color: themeState.textPrimary)),
         content: Text(
-          'Voulez-vous vraiment vous déconnecter ?',
+          tr('logout_confirm'),
           style: TextStyle(color: themeState.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text(tr('cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -721,7 +728,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               navigator.pushNamedAndRemoveUntil('/', (_) => false);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Déconnecter'),
+            child: Text(tr('logout_action')),
           ),
         ],
       ),
@@ -741,7 +748,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const Icon(Icons.warning_amber_rounded, color: Color(0xFFCE1126)),
               const SizedBox(width: 8),
               Text(
-                'Supprimer le compte',
+                tr('delete_account_title'),
                 style: TextStyle(color: themeState.textPrimary, fontWeight: FontWeight.bold),
               ),
             ],
@@ -751,12 +758,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Cette action est irréversible. Toutes vos données (commandes, adresses, profil) seront supprimées définitivement.',
+                tr('delete_account_warning'),
                 style: TextStyle(color: themeState.textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 16),
               Text(
-                'Tapez SUPPRIMER pour confirmer :',
+                tr('type_delete_confirm'),
                 style: TextStyle(
                   color: themeState.textPrimary,
                   fontSize: 13,
@@ -768,7 +775,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 controller: confirmController,
                 onChanged: (_) => setLocalState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'SUPPRIMER',
+                  hintText: tr('delete_keyword'),
                   hintStyle: TextStyle(color: _c.onSurfaceVariant),
                   filled: true,
                   fillColor: _c.surfaceHigh,
@@ -787,10 +794,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 confirmController.dispose();
                 Navigator.pop(ctx);
               },
-              child: Text('Annuler', style: TextStyle(color: _c.onSurfaceVariant)),
+              child: Text(tr('cancel'), style: TextStyle(color: _c.onSurfaceVariant)),
             ),
             ElevatedButton(
-              onPressed: confirmController.text == 'SUPPRIMER'
+              onPressed: confirmController.text == tr('delete_keyword')
                   ? () async {
                       final navigator = Navigator.of(context);
                       Navigator.pop(ctx);
@@ -816,7 +823,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 disabledBackgroundColor: _c.surfaceHigh,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+              child: Text(tr('delete'), style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),

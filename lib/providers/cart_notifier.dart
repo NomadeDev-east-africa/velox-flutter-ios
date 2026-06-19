@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../constants.dart';
 import '../models/order.dart';
 import '../models/order_item.dart';
 import '../models/restaurant.dart';
@@ -15,6 +16,7 @@ import '../services/hive_service.dart';
 import '../services/order_service.dart';
 import '../services/food_notification_service.dart';
 import 'active_order_notifier.dart';
+import 'user_notifier.dart';
 
 class CartState {
   final List<OrderItem> items;
@@ -212,6 +214,7 @@ class CartNotifier extends StateNotifier<CartState> {
     String? addressDetails,
     String? customerName,
     String? customerPhone,
+    int pointsUsed = 0,
   }) async {
     if (state.isEmpty || state.selectedRestaurant == null) {
       debugPrint('❌ [CartNotifier] Panier vide ou restaurant null');
@@ -235,6 +238,12 @@ class CartNotifier extends StateNotifier<CartState> {
         geoPoint = GeoPoint(deliveryLocation.latitude, deliveryLocation.longitude);
       }
 
+      // Réduction fidélité — appliquée UNIQUEMENT aux frais de livraison.
+      // Plafond = deliveryFee → le subtotal (part restaurant) reste intact.
+      final maxByDelivery = state.deliveryFee ~/ kPointValue;
+      final safePoints = pointsUsed.clamp(0, maxByDelivery);
+      final discount = safePoints * kPointValue;
+
       final order = Order(
         id: '',
         userId: userId,
@@ -252,6 +261,8 @@ class CartNotifier extends StateNotifier<CartState> {
         addressDetails: addressDetails,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
+        pointsUsed: safePoints,
+        discount: discount,
       );
 
       final orderId = await OrderService().createOrder(order);
@@ -291,7 +302,20 @@ class CartNotifier extends StateNotifier<CartState> {
         addressDetails:   order.addressDetails,
         createdAt:        order.createdAt,
         updatedAt:        order.updatedAt,
+        pointsUsed:       order.pointsUsed,
+        discount:         order.discount,
       );
+
+      // Débiter les points utilisés (non bloquant)
+      if (safePoints > 0) {
+        unawaited(
+          _ref
+              .read(userNotifierProvider.notifier)
+              .redeemPoints(safePoints)
+              .catchError(
+                  (e) => debugPrint('⚠️ [CartNotifier] redeemPoints: $e')),
+        );
+      }
 
       // Non bloquant — la navigation ne doit pas attendre le stream Firestore
       unawaited(
@@ -306,7 +330,7 @@ class CartNotifier extends StateNotifier<CartState> {
           restaurantName: state.selectedRestaurant!.name,
           orderId: orderId,
           customerName: customerInfo['name']!,
-          total: state.total,
+          total: order.total,
         )
             .catchError((e) => debugPrint('⚠️ [CartNotifier] Notif: $e')),
       );

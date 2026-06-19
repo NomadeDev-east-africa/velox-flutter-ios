@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'option_group.dart';
+
 class MenuItem {
   final String id;
   final String restaurantId;
@@ -11,6 +13,7 @@ class MenuItem {
   final bool isAvailable;
   final int preparationTime; // en minutes
   final int discountPercentage; // 0 = aucune promo, 1-100 = % de réduction
+  final List<OptionGroup> optionGroups; // options data-driven (vide = fallback)
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -29,6 +32,7 @@ class MenuItem {
     this.isAvailable = true,
     this.preparationTime = 20,
     this.discountPercentage = 0,
+    this.optionGroups = const [],
     required this.createdAt,
     this.updatedAt,
   });
@@ -47,6 +51,7 @@ class MenuItem {
       isAvailable: data['isAvailable'] ?? true,
       preparationTime: data['preparationTime'] ?? 20,
       discountPercentage: (data['discountPercentage'] ?? 0).toInt(),
+      optionGroups: OptionGroup.listFromRaw(data['optionGroups']),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: data['updatedAt'] != null 
           ? (data['updatedAt'] as Timestamp).toDate() 
@@ -66,6 +71,7 @@ class MenuItem {
       'isAvailable': isAvailable,
       'preparationTime': preparationTime,
       'discountPercentage': discountPercentage,
+      'optionGroups': optionGroups.map((g) => g.toMap()).toList(),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
     };
@@ -83,6 +89,7 @@ class MenuItem {
     bool? isAvailable,
     int? preparationTime,
     int? discountPercentage,
+    List<OptionGroup>? optionGroups,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -97,6 +104,7 @@ class MenuItem {
       isAvailable: isAvailable ?? this.isAvailable,
       preparationTime: preparationTime ?? this.preparationTime,
       discountPercentage: discountPercentage ?? this.discountPercentage,
+      optionGroups: optionGroups ?? this.optionGroups,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

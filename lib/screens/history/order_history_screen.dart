@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:nomade_client/models/order.dart';
 import 'package:nomade_client/providers/all_providers.dart';
 import 'package:nomade_client/theme/app_colors.dart';
+import 'package:nomade_client/translations/app_translations.dart';
 import 'package:nomade_client/screens/food/food_tracking/order_tracking_screen.dart';
 
 class OrderHistoryScreen extends ConsumerStatefulWidget {
@@ -45,7 +46,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
         foregroundColor: _c.onSurface,
         elevation: 0,
         title: Text(
-          'Mes commandes',
+          tr('my_orders'),
           style: TextStyle(
             color: _c.onSurface,
             fontWeight: FontWeight.bold,
@@ -70,9 +71,9 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
           indicatorColor: _c.primary,
           indicatorSize: TabBarIndicatorSize.label,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          tabs: const [
-            Tab(text: 'En cours'),
-            Tab(text: 'Historique'),
+          tabs: [
+            Tab(text: tr('in_progress')),
+            Tab(text: tr('history')),
           ],
         ),
       ),
@@ -112,7 +113,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              isIndexBuilding ? 'Mise en place en cours…' : 'Erreur de chargement',
+              isIndexBuilding ? tr('setup_in_progress') : tr('loading_error'),
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
@@ -122,8 +123,8 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
             const SizedBox(height: 10),
             Text(
               isIndexBuilding
-                  ? 'L\'index de la base de données est en cours\nde construction. Réessayez dans quelques minutes.'
-                  : 'Une erreur inattendue s\'est produite.',
+                  ? tr('index_building_msg')
+                  : tr('unexpected_error'),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: _c.onSurfaceVariant, height: 1.5),
             ),
@@ -131,7 +132,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
             OutlinedButton.icon(
               onPressed: () => ref.invalidate(userOrdersProvider),
               icon: Icon(Icons.refresh, color: _c.primary),
-              label: Text('Réessayer', style: TextStyle(color: _c.primary)),
+              label: Text(tr('retry'), style: TextStyle(color: _c.primary)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: _c.primary),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -178,7 +179,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
           ),
           const SizedBox(height: 20),
           Text(
-            isActive ? 'Aucune commande en cours' : 'Aucune commande passée',
+            isActive ? tr('no_active_orders') : tr('no_past_orders'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -188,8 +189,8 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
           const SizedBox(height: 8),
           Text(
             isActive
-                ? 'Vos commandes actives apparaîtront ici'
-                : 'Votre historique de commandes apparaîtra ici',
+                ? tr('active_orders_hint')
+                : tr('history_hint'),
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: _c.onSurfaceVariant),
           ),
@@ -260,7 +261,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '${order.itemCount} article${order.itemCount > 1 ? 's' : ''} · ${order.total} FDJ',
+                          '${order.itemCount} ${tr('items')} · ${order.total} FDJ',
                           style: TextStyle(fontSize: 13, color: _c.onSurfaceVariant),
                         ),
                       ],
@@ -316,7 +317,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
                     Row(
                       children: [
                         Text(
-                          'Suivre',
+                          tr('track'),
                           style: TextStyle(
                             fontSize: 12,
                             color: _c.primary,
@@ -331,7 +332,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
                     Row(
                       children: [
                         Text(
-                          'Détails',
+                          tr('details'),
                           style: TextStyle(
                             fontSize: 12,
                             color: _c.onSurfaceVariant,
@@ -447,7 +448,7 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
 
             // Articles
             Text(
-              'Articles commandés',
+              tr('ordered_items'),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -501,15 +502,15 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
             const SizedBox(height: 12),
 
             // Totaux
-            _detailRow('Sous-total', '${order.subtotal} FDJ', c),
+            _detailRow(tr('subtotal'), '${order.subtotal} FDJ', c),
             const SizedBox(height: 6),
-            _detailRow('Livraison', '${order.deliveryFee} FDJ', c),
+            _detailRow(tr('delivery'), '${order.deliveryFee} FDJ', c),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Total',
+                  tr('total'),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -532,17 +533,17 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
             const SizedBox(height: 12),
 
             // Infos livraison
-            _infoRow(Icons.location_on_outlined, 'Adresse', order.deliveryAddress, c),
+            _infoRow(Icons.location_on_outlined, tr('address'), order.deliveryAddress, c),
             const SizedBox(height: 8),
             _infoRow(
-              order.paymentMethod == 'card' ? Icons.credit_card : Icons.payments_outlined,
-              'Paiement',
-              order.paymentMethod == 'card' ? 'Carte bancaire' : 'Espèces',
+              _paymentIcon(order.paymentMethod),
+              tr('payment'),
+              _paymentLabel(order.paymentMethod),
               c,
             ),
             if (order.deliveryDriverName != null) ...[
               const SizedBox(height: 8),
-              _infoRow(Icons.delivery_dining, 'Livreur', order.deliveryDriverName!, c),
+              _infoRow(Icons.delivery_dining, tr('driver'), order.deliveryDriverName!, c),
             ],
           ],
         ),
@@ -558,6 +559,29 @@ class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen>
         Text(value, style: TextStyle(fontSize: 14, color: c.onSurface)),
       ],
     );
+  }
+
+  String _paymentLabel(String method) {
+    switch (method) {
+      case 'cash':    return tr('cash_label');
+      case 'waafi':   return 'Waafi';
+      case 'd_money': return 'D-Money';
+      case 'cac_pay': return 'CAC Pay';
+      case 'card':    return 'Carte bancaire';
+      case 'mobile_wallet': return 'Mobile Money';
+      default:        return tr('cash_label');
+    }
+  }
+
+  IconData _paymentIcon(String method) {
+    switch (method) {
+      case 'waafi':
+      case 'd_money':
+      case 'cac_pay':
+      case 'mobile_wallet': return Icons.account_balance_wallet;
+      case 'card':          return Icons.credit_card;
+      default:              return Icons.payments_outlined;
+    }
   }
 
   Widget _infoRow(IconData icon, String label, String value, AppColors c) {

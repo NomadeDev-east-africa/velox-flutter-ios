@@ -21,7 +21,7 @@ class LanguageState {
       case 'EN': return 'English';
       case 'SO': return 'Somali';
       case 'AR': return 'العربية';
-      case 'AF': return 'Afar';
+      case 'AA': return 'Afar';
       default:   return 'Français';
     }
   }
@@ -32,7 +32,7 @@ class LanguageState {
       case 'EN': return '🇬🇧';
       case 'SO': return '🇸🇴';
       case 'AR': return '🇸🇦';
-      case 'AF': return '🇩🇯';
+      case 'AA': return '🇩🇯';
       default:   return '🇫🇷';
     }
   }
@@ -58,14 +58,14 @@ class LanguageNotifier extends StateNotifier<LanguageState> {
   /// Changer la langue de l'app
   Future<void> setLanguage(String lang) async {
     if (!mounted) return;
+    final code = lang.toLowerCase(); // 'fr' | 'en' | 'so' | 'ar' | 'aa'
+
+    // ⚠️ Mettre à jour les traductions AVANT l'état : le changement d'état
+    // déclenche le rebuild, qui doit lire la nouvelle map de `AppTranslations`.
+    await AppTranslations.setLanguage(code);
+    await LocalCache.saveLanguage(code);
 
     state = state.copyWith(language: lang.toUpperCase());
-
-    // Persister
-    await LocalCache.saveLanguage(lang.toLowerCase());
-
-    // Mettre à jour AppTranslations (système de traduction existant)
-    await AppTranslations.setLanguage(lang.toLowerCase());
 
     debugPrint('🌐 [LanguageNotifier] Langue: ${state.languageName}');
   }

@@ -131,7 +131,12 @@
       "Bash(echo \"EXIT=$?\")",
       "Bash(curl -s \"https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml\")",
       "Bash(./gradlew.bat :app:compileDebugKotlin --console=plain)",
-      "Bash(git ls-remote *)"
+      "Bash(git ls-remote *)",
+      "Bash(curl -s \"https://dl.google.com/dl/android/maven2/androidx/credentials/credentials/maven-metadata.xml\")",
+      "Bash(curl -s \"https://repo1.maven.org/maven2/com/google/android/libraries/identity/googleid/googleid/maven-metadata.xml\")",
+      "Bash(grep -E \"^1\\\\.[0-9]+\\\\.[0-9]+$\")",
+      "Bash(git rev-list *)",
+      "PowerShell(git *)"
     ]
   }
 }

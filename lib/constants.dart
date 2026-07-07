@@ -86,9 +86,13 @@ final phoneNumberValidator = MinLengthValidator(10,
 
 // ==================== FIDÉLITÉ ====================
 // 1 commande/course complétée = kPointsPerOrder points
-// 1 point = kPointValue FDJ de réduction sur les frais de livraison
+// 1 point = 2 FDJ de réduction sur les frais de livraison
 const int kPointsPerOrder = 10;
-const int kPointValue = 15;
+const int kPointValue = 2;
+
+// ==================== COULEUR NEON VTC ====================
+const Color kNeonGreen = Color(0xFF9FFF88);
+const Color kNeonGreenDark = Color(0xFF026400);
 
 // ==================== TEXTE COMMUN ====================
 class KOrText extends StatelessWidget {

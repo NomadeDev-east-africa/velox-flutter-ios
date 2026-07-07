@@ -9,6 +9,7 @@ import 'package:nomade_client/screens/auth-firebase/phoneLogin/phone_login_scree
 import 'package:nomade_client/screens/auth-firebase/signUp/components/sign_up_form.dart';
 import 'package:nomade_client/screens/HomeScreen/home_screen_app.dart';
 import 'package:nomade_client/constants.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -54,9 +55,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final c = isDark ? AppColors.dark : AppColors.light;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
+      backgroundColor: c.bg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -97,7 +99,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Text(
                   'Livraison & taxi à Djibouti',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: bodyTextColor,
+                    color: c.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -109,13 +111,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 'Créer votre compte',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: titleColor,
+                  color: c.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Rejoignez des milliers d\'utilisateurs à Djibouti',
-                style: theme.textTheme.bodyMedium?.copyWith(color: bodyTextColor),
+                style: theme.textTheme.bodyMedium?.copyWith(color: c.onSurfaceVariant),
               ),
 
               const SizedBox(height: 28),
@@ -137,6 +139,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               _GoogleAuthButton(
                 onTap: _isGoogleLoading ? null : _signInWithGoogle,
                 isLoading: _isGoogleLoading,
+                colors: c,
               ),
 
               // ── Divider "ou" ──────────────────────────────────────
@@ -144,15 +147,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Row(
                   children: [
-                    Expanded(child: Divider(color: Colors.grey.shade200)),
+                    Expanded(child: Divider(color: c.outlineVariant)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
                         'ou',
-                        style: TextStyle(color: bodyTextColor, fontSize: 13),
+                        style: TextStyle(color: c.onSurfaceVariant, fontSize: 13),
                       ),
                     ),
-                    Expanded(child: Divider(color: Colors.grey.shade200)),
+                    Expanded(child: Divider(color: c.outlineVariant)),
                   ],
                 ),
               ),
@@ -166,7 +169,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     Icon(
                       Icons.email_outlined,
                       size: 16,
-                      color: bodyTextColor,
+                      color: c.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -174,7 +177,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           ? 'Masquer le formulaire email'
                           : 'S\'inscrire avec email et mot de passe',
                       style: TextStyle(
-                        color: bodyTextColor,
+                        color: c.onSurfaceVariant,
                         fontSize: 13,
                         decoration: TextDecoration.underline,
                       ),
@@ -228,7 +231,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
-                    color: bodyTextColor.withValues(alpha: 0.7),
+                    color: c.onSurfaceVariant.withValues(alpha: 0.7),
                     height: 1.5,
                   ),
                 ),
@@ -298,8 +301,9 @@ class _PrimaryAuthButton extends StatelessWidget {
 class _GoogleAuthButton extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isLoading;
+  final AppColors colors;
 
-  const _GoogleAuthButton({required this.onTap, required this.isLoading});
+  const _GoogleAuthButton({required this.onTap, required this.isLoading, required this.colors});
 
   @override
   Widget build(BuildContext context) {
@@ -312,7 +316,7 @@ class _GoogleAuthButton extends StatelessWidget {
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade200, width: 1.5),
+            border: Border.all(color: colors.outlineVariant, width: 1.5),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -330,15 +334,15 @@ class _GoogleAuthButton extends StatelessWidget {
                 child: Text(
                   isLoading ? 'Connexion en cours...' : 'Continuer avec Google',
                   style: TextStyle(
-                    color: isLoading ? bodyTextColor : titleColor,
+                    color: isLoading ? colors.onSurfaceVariant : colors.onSurface,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               if (!isLoading)
-                const Icon(Icons.arrow_forward_ios_rounded,
-                    color: Colors.grey, size: 16),
+                Icon(Icons.arrow_forward_ios_rounded,
+                    color: colors.onSurfaceVariant, size: 16),
             ],
           ),
         ),

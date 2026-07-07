@@ -91,7 +91,7 @@ class _ResetEmailSentScreenState extends State<ResetEmailSentScreen> {
                       'Vérifiez votre boîte de réception et vos spams',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade800,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),

@@ -29,9 +29,7 @@ class AddToOrderScreen extends ConsumerStatefulWidget {
 class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
   late AppColors _c;
 
-  int                     _quantity = 1;
-  final List<ExtraOption> _extras   = [];
-  final List<SauceOption> _sauces   = [];
+  int _quantity = 1;
 
   /// Sélections par groupe (aligné sur `menuItem.optionGroups`).
   /// Pour un groupe `single`, le Set contient 0 ou 1 index ; pour `multiple`, 0..N.
@@ -45,9 +43,9 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
     super.initState();
     if (_isDataDriven) {
       _initializeOptionGroups();
-    } else {
-      _initializeExtrasAndSauces();
     }
+    // Plat sans optionGroups : aucune section d'options à afficher
+    // (plus d'extras/sauces inventés par défaut, cf. fix aligné sur l'app Android).
   }
 
   /// Initialise les sélections data-driven. Présélectionne le 1er choix d'un
@@ -62,34 +60,9 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
     }
   }
 
-  void _initializeExtrasAndSauces() {
-    _extras.addAll([
-      ExtraOption(name: 'Frites',     price: 500),
-      ExtraOption(name: 'Tomates',    price: 500),
-      ExtraOption(name: 'Oignons',    price: 500),
-      ExtraOption(name: 'Salade',     price: 500),
-      ExtraOption(name: 'Taille L',   price: 500),
-      ExtraOption(name: 'Taille XL',  price: 500),
-      ExtraOption(name: 'Taille XXL', price: 500),
-    ]);
-    _sauces.addAll([
-      SauceOption(name: 'Samouraï',   price: 50),
-      SauceOption(name: 'Mayonnaise', price: 50),
-      SauceOption(name: 'Ketchup',    price: 50),
-      SauceOption(name: 'Barbecue',   price: 50),
-      SauceOption(name: 'Harissa',    price: 50),
-      SauceOption(name: 'Moutarde',   price: 50),
-    ]);
-  }
-
-  int get _extrasTotal =>
-      _extras.where((e) => e.isSelected).fold(0, (s, e) => s + e.price);
-  int get _saucesTotal =>
-      _sauces.where((s) => s.isSelected).fold(0, (s, e) => s + e.price);
-
   int get _optionsSurcharge => _isDataDriven
       ? OptionSelection.surcharge(_optionGroups, _groupSelections)
-      : (_extrasTotal + _saucesTotal);
+      : 0;
 
   int get _totalPrice =>
       ((widget.menuItem.price + _optionsSurcharge) * _quantity).toInt();
@@ -215,8 +188,9 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
       extras = mapping.extras;
       sauces = mapping.sauces;
     } else {
-      extras = _extras.where((e) => e.isSelected).toList();
-      sauces = _sauces.where((s) => s.isSelected).toList();
+      // Plat sans optionGroups : pas d'extras/sauces.
+      extras = <ExtraOption>[];
+      sauces = <SauceOption>[];
     }
 
     final orderItem = OrderItem(
@@ -457,61 +431,6 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
     );
   }
 
-  Widget _buildExtraItem(ExtraOption extra) {
-    return GestureDetector(
-      onTap: () => setState(() => extra.isSelected = !extra.isSelected),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: _c.outlineVariant.withValues(alpha: 0.2)),
-          ),
-          color: extra.isSelected
-              ? _c.primary.withValues(alpha: 0.05)
-              : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                color: extra.isSelected ? _c.primary : Colors.transparent,
-                border: Border.all(
-                  color: extra.isSelected ? _c.primary : _c.outlineVariant,
-                  width: 1.5,
-                ),
-              ),
-              child: extra.isSelected
-                  ? Icon(Icons.check, color: _c.onPrimary, size: 14)
-                  : null,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                extra.name.toUpperCase(),
-                style: TextStyle(
-                  color: extra.isSelected ? _c.onSurface : _c.onSurfaceVariant,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-            Text(
-              '+ ${extra.price} FDJ',
-              style: TextStyle(
-                color: extra.isSelected ? _c.primary : _c.onSurfaceVariant,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ── RENDU DATA-DRIVEN ───────────────────────────────────────────────────────
 
   Widget _buildGroupSection(int groupIndex) {
@@ -593,83 +512,6 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
     );
   }
 
-  Widget _buildSauceGrid() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: _sauces.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          childAspectRatio: 2.8,
-        ),
-        itemBuilder: (context, index) {
-          final sauce = _sauces[index];
-          return GestureDetector(
-            onTap: () => setState(() => sauce.isSelected = !sauce.isSelected),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: _c.surfaceHigh,
-                border: Border.all(
-                  color: sauce.isSelected
-                      ? _c.primary
-                      : _c.outlineVariant.withValues(alpha: 0.3),
-                  width: sauce.isSelected ? 1.5 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: sauce.isSelected ? _c.primary : Colors.transparent,
-                      border: Border.all(
-                        color: sauce.isSelected ? _c.primary : _c.outlineVariant,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: sauce.isSelected
-                        ? Icon(Icons.check, color: _c.onPrimary, size: 11)
-                        : null,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          sauce.name.toUpperCase(),
-                          style: TextStyle(
-                            color: _c.onSurface,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        Text(
-                          '${sauce.price} FDJ',
-                          style: TextStyle(
-                            color: _c.onSurfaceVariant,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   Widget _buildAddToCartButton() {
     return Container(
@@ -743,15 +585,10 @@ class _AddToOrderScreenState extends ConsumerState<AddToOrderScreen> {
                 children: [
                   _buildHeroImage(),
                   _buildPriceAndQuantity(),
+                  // Plat sans optionGroups : aucune section d'options affichée.
                   if (_isDataDriven)
                     ...List.generate(
-                        _optionGroups.length, _buildGroupSection)
-                  else ...[
-                    _buildSectionHeader('CHOIX DES EXTRAS', required: true),
-                    ..._extras.map(_buildExtraItem),
-                    _buildSectionHeader('CHOIX DES SAUCES'),
-                    _buildSauceGrid(),
-                  ],
+                        _optionGroups.length, _buildGroupSection),
                   const SizedBox(height: 24),
                 ],
               ),

@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -20,10 +22,63 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.91637120258-5q0fa6o0oapl6aema8ss0tj3vauona78</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<true/>
+	<key>GIDClientID</key>
+	<string>91637120258-5q0fa6o0oapl6aema8ss0tj3vauona78.apps.googleusercontent.com</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Nomade utilise l'appareil photo pour prendre votre photo de profil.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Nomade utilise votre position en arrière-plan pour suivre la livraison et la course en cours.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Nomade utilise votre position pour vous localiser, suivre votre livraison et calculer votre trajet.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Nomade accède à vos photos pour définir votre photo de profil.</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>flutter</string>
+					<key>UISceneDelegateClassName</key>
+					<string>FlutterSceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -40,44 +95,6 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-
-	<!-- ── Push notifications (Firebase Messaging) ── -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-		<string>fetch</string>
-	</array>
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<true/>
-
-	<!-- ── Permissions (textes affichés par iOS lors de la demande) ── -->
-	<!-- Localisation : suivi du livreur et courses taxi -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Nomade utilise votre position pour vous localiser, suivre votre livraison et calculer votre trajet.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Nomade utilise votre position en arrière-plan pour suivre la livraison et la course en cours.</string>
-	<!-- Caméra et photothèque : photo de profil -->
-	<key>NSCameraUsageDescription</key>
-	<string>Nomade utilise l'appareil photo pour prendre votre photo de profil.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Nomade accède à vos photos pour définir votre photo de profil.</string>
-
-	<!-- ── Google Sign-In : scheme inversé du iosClientId ── -->
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.91637120258-5q0fa6o0oapl6aema8ss0tj3vauona78</string>
-			</array>
-		</dict>
 	</array>
 </dict>
 </plist>

@@ -34,15 +34,7 @@ class RideChoiceCard extends StatelessWidget {
         curve: Curves.easeInOut,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-            colors: [drapeauVert, vertPrincipal],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          )
-              : LinearGradient(
-            colors: [c.surfaceLow, c.surface],
-          ),
+          color: isSelected ? kNeonGreen : c.surfaceLow,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -81,14 +73,14 @@ class RideChoiceCard extends StatelessWidget {
 
             // Image véhicule
             SizedBox(
-              height: 42,
+              height: 65,
               child: Image.asset(
                 _getVehicleImage(),
                 fit: BoxFit.contain,
                 errorBuilder: (_, _, _) => Icon(
                   Icons.directions_car,
-                  size: 32,
-                  color: isSelected ? blanc : vertPrincipal,
+                  size: 48,
+                  color: isSelected ? kNeonGreenDark : vertPrincipal,
                 ),
               ),
             ),
@@ -100,9 +92,20 @@ class RideChoiceCard extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: isSelected ? blanc : c.onSurface,
+                color: isSelected ? kNeonGreenDark : c.onSurface,
               ),
             ),
+            const SizedBox(height: 2),
+
+            // Délai d'arrivée
+            if (ride.estimatedArrivalTime != null)
+              Text(
+                ride.estimatedArrivalTime!,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isSelected ? kNeonGreenDark.withValues(alpha: 0.7) : c.onSurfaceVariant,
+                ),
+              ),
             const SizedBox(height: 3),
 
             // Prix
@@ -111,7 +114,7 @@ class RideChoiceCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? blanc.withValues(alpha:0.75) : drapeauVert,
+                color: isSelected ? kNeonGreenDark : drapeauVert,
               ),
             ),
           ],

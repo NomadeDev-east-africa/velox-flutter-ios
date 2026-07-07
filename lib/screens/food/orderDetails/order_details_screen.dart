@@ -8,7 +8,7 @@ import 'package:nomade_client/translations/app_translations.dart';
 import 'package:nomade_client/models/order_item.dart';
 import 'package:nomade_client/providers/all_providers.dart';
 import 'package:nomade_client/screens/food/food_tracking/delivery_address_picker_screen.dart';
-import 'package:nomade_client/screens/food/food_tracking/order_tracking_screen.dart';
+import 'package:nomade_client/screens/food/pending_order/pending_order_screen.dart';
 import 'package:nomade_client/theme/app_colors.dart';
 
 // ✅ PHASE 4 : cart_provider.dart SUPPRIMÉ — remplacé par cartProvider Riverpod
@@ -23,7 +23,7 @@ class OrderDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
-  bool _isProcessing = false;
+  final bool _isProcessing = false;
   String _selectedPaymentMethod = 'cash';
   int _pointsApplied = 0;
 
@@ -120,9 +120,11 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
               children: [
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
-                  child: Icon(Icons.location_on, color: _accent, size: 18),
+                  child: Icon(Icons.arrow_back_ios_rounded, color: _accent, size: 20),
                 ),
                 const SizedBox(width: 6),
+                Icon(Icons.location_on, color: _accent, size: 16),
+                const SizedBox(width: 4),
                 Text(
                   tr('checkout'),
                   style: TextStyle(
@@ -764,47 +766,33 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
       return;
     }
 
-    setState(() => _isProcessing = true);
+    final userState = ref.read(userNotifierProvider);
+    final customerName  = userState.name  ?? userState.firebaseUser?.displayName ?? 'Client';
+    final customerPhone = userState.phone ?? userState.firebaseUser?.phoneNumber  ?? 'Non renseigné';
 
-    try {
-      // Lire les infos client depuis le provider déjà chargé → évite un aller-retour Firestore
-      final userState = ref.read(userNotifierProvider);
-      final customerName  = userState.name  ?? userState.firebaseUser?.displayName ?? 'Client';
-      final customerPhone = userState.phone ?? userState.firebaseUser?.phoneNumber  ?? 'Non renseigné';
+    final cartState = ref.read(cartProvider);
+    final subtotal = cartState.items.fold<double>(0, (s, i) => s + i.totalPrice);
+    const deliveryFee = 200.0;
+    final pointsDiscount = _pointsApplied * kPointValue;
+    final total = (subtotal + deliveryFee - pointsDiscount).clamp(0.0, double.infinity);
 
-      final orderId = await ref.read(cartProvider.notifier).createOrder(
-            userId: user.uid,
-            paymentMethod: _selectedPaymentMethod,
-            deliveryAddress: _deliveryAddressName!,
-            deliveryLocation: _deliveryLocation!,
-            addressDetails: _deliveryAddress,
-            customerName: customerName,
-            customerPhone: customerPhone,
-            pointsUsed: _pointsApplied,
-          );
-
-      if (!mounted) return;
-
-      if (orderId == null) {
-        setState(() => _isProcessing = false);
-        _showSnack(tr('order_creation_error'),
-            backgroundColor: Colors.red);
-        return;
-      }
-
-      // ✅ Navigation ici — CartNotifier ne navigue plus
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => OrderTrackingScreen(orderId: orderId),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PendingOrderScreen(
+          userId: user.uid,
+          paymentMethod: _selectedPaymentMethod,
+          deliveryAddress: _deliveryAddressName!,
+          deliveryLocation: _deliveryLocation!,
+          addressDetails: _deliveryAddress,
+          customerName: customerName,
+          customerPhone: customerPhone,
+          pointsUsed: _pointsApplied,
+          subtotal: subtotal,
+          deliveryFee: deliveryFee,
+          total: total,
         ),
-        (route) => route.isFirst,
-      );
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-        _showSnack('${tr('error')}: $e', backgroundColor: Colors.red);
-      }
-    }
+      ),
+    );
   }
 
   Future<void> _pickAddress() async {

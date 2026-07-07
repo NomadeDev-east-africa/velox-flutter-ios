@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/hive_service.dart';
+import '../services/notification_service.dart';
 import '../utils/local_cache.dart';
 
 // ═══════════════════════════════════════════════════════════════
@@ -288,6 +289,7 @@ class UserNotifier extends StateNotifier<UserState> {
   /// Déconnexion complète avec nettoyage de toutes les données locales
   Future<void> logout() async {
     try {
+      await NotificationService().clearToken();
       await _auth.signOut();
 
       // ✅ Vider les données métier Hive

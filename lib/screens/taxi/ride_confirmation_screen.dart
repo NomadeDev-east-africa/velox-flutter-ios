@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nomade_client/constants.dart';
 import 'package:nomade_client/providers/all_providers.dart';
 import 'package:nomade_client/theme/app_colors.dart';
 import 'package:nomade_client/translations/app_translations.dart';
@@ -590,22 +591,14 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
           child: Container(
             width: double.infinity,
             height: 64,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: _isDark
-                    ? const [Color(0xFF9FFF88), Color(0xFF00FD00)]
-                    : [_c.primary, _c.primary],
-              ),
-            ),
+            decoration: const BoxDecoration(color: kNeonGreen),
             child: isCreating
-                ? Center(
+                ? const Center(
                     child: SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
-                          color: _c.onPrimary, strokeWidth: 2),
+                          color: kNeonGreenDark, strokeWidth: 2),
                     ),
                   )
                 : Row(
@@ -616,13 +609,13 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
-                          color: _c.onPrimary,
+                          color: kNeonGreenDark,
                           letterSpacing: 3,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Icon(Icons.keyboard_double_arrow_right,
-                          color: _c.onPrimary, size: 24),
+                      const Icon(Icons.keyboard_double_arrow_right,
+                          color: kNeonGreenDark, size: 24),
                     ],
                   ),
           ),

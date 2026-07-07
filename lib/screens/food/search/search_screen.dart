@@ -134,16 +134,16 @@ class _SearchScreenState extends State<SearchScreen> {
                       Icon(
                         _isSearching ? Icons.search_off : Icons.restaurant,
                         size: 64,
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         _isSearching
                             ? 'Aucun résultat trouvé'
                             : 'Aucun restaurant disponible',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       if (_isSearching) ...[
@@ -152,7 +152,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           'Essayez avec un autre mot-clé',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -222,8 +222,8 @@ class SearchForm extends StatelessWidget {
           padding: const EdgeInsets.all(8.0),
           child: SvgPicture.asset(
             'assets/icons/search.svg',
-            colorFilter: const ColorFilter.mode(
-              bodyTextColor,
+            colorFilter: ColorFilter.mode(
+              Theme.of(context).colorScheme.onSurfaceVariant,
               BlendMode.srcIn,
             ),
           ),

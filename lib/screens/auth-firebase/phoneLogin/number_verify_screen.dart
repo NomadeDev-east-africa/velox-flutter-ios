@@ -61,14 +61,14 @@ class NumberVerifyScreen extends StatelessWidget {
                 'Code de vérification',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: titleColor,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
               RichText(
                 text: TextSpan(
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: bodyTextColor,
+                    color: theme.colorScheme.onSurfaceVariant,
                     height: 1.5,
                   ),
                   children: [
@@ -76,9 +76,9 @@ class NumberVerifyScreen extends StatelessWidget {
                         text: 'Entrez le code à 6 chiffres envoyé au\n'),
                     TextSpan(
                       text: masked,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: titleColor,
+                        color: theme.colorScheme.onSurface,
                         letterSpacing: 1,
                       ),
                     ),
@@ -129,7 +129,7 @@ class NumberVerifyScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
-                    color: bodyTextColor.withValues(alpha: 0.7),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                     height: 1.5,
                   ),
                 ),

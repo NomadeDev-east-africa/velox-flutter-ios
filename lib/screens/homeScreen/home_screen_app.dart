@@ -143,7 +143,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
             ),
           ),
           Image.asset(
-            'assets/images/logo-velox.png',
+            'assets/images/logo-velox-sansBG.png',
             height: 90,
             fit: BoxFit.contain,
           ),
@@ -561,27 +561,14 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
           _buildLoyaltyCard(c),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  tr('our_services'),
-                  style: TextStyle(
-                    color: c.onSurface,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                Text(
-                  tr('see_all'),
-                  style: TextStyle(
-                    color: c.primary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            child: Text(
+              tr('our_services'),
+              style: TextStyle(
+                color: c.onSurface,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
           Padding(

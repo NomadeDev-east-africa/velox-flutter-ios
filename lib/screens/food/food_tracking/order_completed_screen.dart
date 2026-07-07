@@ -174,7 +174,7 @@ class _OrderCompletedScreenState extends State<OrderCompletedScreen> with Single
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: inputColor,
+                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -366,7 +366,7 @@ class _OrderCompletedScreenState extends State<OrderCompletedScreen> with Single
                     size: 42,
                     color: starValue <= rating
                         ? Colors.amber
-                        : Colors.grey.shade300,
+                        : Theme.of(context).colorScheme.outlineVariant,
                   ),
                 ),
               );
@@ -392,26 +392,26 @@ class _OrderCompletedScreenState extends State<OrderCompletedScreen> with Single
               maxLines: 3,
               maxLength: 300,
               textInputAction: TextInputAction.done,
-              style: const TextStyle(color: Colors.black87, fontSize: 14),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Laissez un commentaire (optionnel)...',
-                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14),
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: primaryColor, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.all(12),
-                counterStyle: TextStyle(color: Colors.grey[400], fontSize: 11),
+                counterStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11),
               ),
             ),
           ],

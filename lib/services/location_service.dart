@@ -387,49 +387,68 @@ class LocationService {
       return [];
     }
 
-    await _checkRateLimit();
-
-    // ✅ BUG 5 FIX : appel direct à _nominatimBaseUrl
     try {
       final encodedQuery = Uri.encodeQueryComponent(query);
-      final url = Uri.parse(
-        '$_nominatimBaseUrl/search'
-        '?q=$encodedQuery&format=json&limit=5&addressdetails=1',
-      );
-      debugPrint('🔗 URL recherche: $url');
 
-      final response = await http.get(
-        url,
-        headers: {'User-Agent': 'Nomade253App/1.0'},
-      ).timeout(const Duration(seconds: 10));
+      // Priorité aux adresses de Djibouti (résultats restreints via countrycodes=dj)
+      await _checkRateLimit();
+      final djiboutiResults =
+          await _fetchNominatimResults(encodedQuery, restrictToDjibouti: true);
+      if (djiboutiResults.isNotEmpty) return djiboutiResults;
 
-      if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-        debugPrint('📦 ${data.length} résultats trouvés');
-
-        final results = data.map<PlaceResult>((item) {
-          final name = item['display_name'] ?? 'Lieu inconnu';
-          final lat  = double.tryParse(item['lat'].toString()) ?? 0.0;
-          final lon  = double.tryParse(item['lon'].toString()) ?? 0.0;
-
-          final cacheKey =
-              '${lat.toStringAsFixed(6)}_${lon.toStringAsFixed(6)}';
-          if (!_addressCache.containsKey(cacheKey)) {
-            _addressCache[cacheKey] = CacheEntry(name, DateTime.now());
-          }
-
-          return PlaceResult(name: name, latitude: lat, longitude: lon);
-        }).toList();
-
-        await _saveCache();
-        return results;
-      }
+      // Fallback mondial : seulement si rien trouvé à Djibouti
+      debugPrint('🌍 Aucun résultat à Djibouti — fallback recherche mondiale');
+      await _checkRateLimit();
+      return await _fetchNominatimResults(encodedQuery, restrictToDjibouti: false);
     } catch (e) {
       debugPrint('⚠️ Erreur searchPlaces: $e');
     }
 
     debugPrint('❌ searchPlaces échoué');
     return [];
+  }
+
+  // ✅ BUG 5 FIX : appel direct à _nominatimBaseUrl
+  // Priorise les adresses de Djibouti via countrycodes=dj (le service ne couvre
+  // que Djibouti) tout en gardant un fallback mondial pour éviter les recherches
+  // "aucun résultat" si Nominatim ne référence pas encore un lieu local précis.
+  Future<List<PlaceResult>> _fetchNominatimResults(
+    String encodedQuery, {
+    required bool restrictToDjibouti,
+  }) async {
+    final countryFilter = restrictToDjibouti ? '&countrycodes=dj' : '';
+    final url = Uri.parse(
+      '$_nominatimBaseUrl/search'
+      '?q=$encodedQuery&format=json&limit=5&addressdetails=1$countryFilter',
+    );
+    debugPrint('🔗 URL recherche (${restrictToDjibouti ? "Djibouti" : "monde"}): $url');
+
+    final response = await http.get(
+      url,
+      headers: {'User-Agent': 'Nomade253App/1.0'},
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) return [];
+
+    final List data = jsonDecode(response.body);
+    debugPrint('📦 ${data.length} résultats trouvés');
+
+    final results = data.map<PlaceResult>((item) {
+      final name = item['display_name'] ?? 'Lieu inconnu';
+      final lat  = double.tryParse(item['lat'].toString()) ?? 0.0;
+      final lon  = double.tryParse(item['lon'].toString()) ?? 0.0;
+
+      final cacheKey =
+          '${lat.toStringAsFixed(6)}_${lon.toStringAsFixed(6)}';
+      if (!_addressCache.containsKey(cacheKey)) {
+        _addressCache[cacheKey] = CacheEntry(name, DateTime.now());
+      }
+
+      return PlaceResult(name: name, latitude: lat, longitude: lon);
+    }).toList();
+
+    await _saveCache();
+    return results;
   }
 
   // ════════════════════════════════════════════════════════════

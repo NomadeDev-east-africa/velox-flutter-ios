@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'constants.dart';
+import 'theme/app_colors.dart';
 import 'translations/app_translations.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/homeScreen/home_screen_app.dart';
@@ -157,35 +158,28 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   // (dialog permission GPS cause inactive→resumed sans paused intermédiaire)
   bool _hasBeenPaused = false;
 
-  static final TextTheme _lightTextTheme = GoogleFonts.poppinsTextTheme(TextTheme(
-    displayLarge:   GoogleFonts.poppins(textStyle: const TextStyle(fontWeight: FontWeight.w700)),
-    displayMedium:  GoogleFonts.poppins(textStyle: const TextStyle(fontWeight: FontWeight.w700)),
-    displaySmall:   GoogleFonts.poppins(textStyle: const TextStyle(fontWeight: FontWeight.w700)),
-    headlineLarge:  GoogleFonts.poppins(textStyle: const TextStyle(fontWeight: FontWeight.w700)),
-    headlineMedium: GoogleFonts.poppins(textStyle: const TextStyle(fontWeight: FontWeight.w700)),
-    headlineSmall:  GoogleFonts.poppins(textStyle: const TextStyle(fontWeight: FontWeight.w600)),
-    titleLarge:     GoogleFonts.poppins(textStyle: const TextStyle(fontWeight: FontWeight.w700)),
-    titleMedium:    GoogleFonts.poppins(textStyle: const TextStyle(fontWeight: FontWeight.w600)),
-    titleSmall:     GoogleFonts.poppins(textStyle: const TextStyle(fontWeight: FontWeight.w500)),
-    bodyLarge:      GoogleFonts.inter(textStyle: const TextStyle(color: Color(0xFF212121))),
-    bodyMedium:     GoogleFonts.inter(textStyle: const TextStyle(color: bodyTextColor)),
-    bodySmall:      GoogleFonts.inter(textStyle: const TextStyle(color: bodyTextColor)),
-    labelLarge:     GoogleFonts.inter(textStyle: const TextStyle(color: titleColor, fontWeight: FontWeight.w600)),
-    labelMedium:    GoogleFonts.inter(textStyle: const TextStyle(color: bodyTextColor)),
-    labelSmall:     GoogleFonts.inter(textStyle: const TextStyle(color: bodyTextColor)),
-  ));
-
-  static final TextTheme _darkTextTheme = GoogleFonts.poppinsTextTheme(const TextTheme(
-    displayLarge:   TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-    displayMedium:  TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-    displaySmall:   TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-    headlineLarge:  TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-    headlineMedium: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-    headlineSmall:  TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
-    titleLarge:     TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
-    titleMedium:    TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
-    titleSmall:     TextStyle(fontWeight: FontWeight.w500, color: Colors.white),
-  ));
+  // TextTheme construit à partir de AppColors (onSurface / onSurfaceVariant) —
+  // remplace les Colors.white / bodyTextColor en dur pour rester cohérent
+  // avec le thème clair ET sombre (voir PROMPT_THEME_ALIGNEMENT).
+  static TextTheme _textThemeFrom(AppColors c) {
+    return GoogleFonts.poppinsTextTheme(TextTheme(
+      displayLarge:   GoogleFonts.poppins(textStyle: TextStyle(fontWeight: FontWeight.w700, color: c.onSurface)),
+      displayMedium:  GoogleFonts.poppins(textStyle: TextStyle(fontWeight: FontWeight.w700, color: c.onSurface)),
+      displaySmall:   GoogleFonts.poppins(textStyle: TextStyle(fontWeight: FontWeight.w700, color: c.onSurface)),
+      headlineLarge:  GoogleFonts.poppins(textStyle: TextStyle(fontWeight: FontWeight.w700, color: c.onSurface)),
+      headlineMedium: GoogleFonts.poppins(textStyle: TextStyle(fontWeight: FontWeight.w700, color: c.onSurface)),
+      headlineSmall:  GoogleFonts.poppins(textStyle: TextStyle(fontWeight: FontWeight.w600, color: c.onSurface)),
+      titleLarge:     GoogleFonts.poppins(textStyle: TextStyle(fontWeight: FontWeight.w700, color: c.onSurface)),
+      titleMedium:    GoogleFonts.poppins(textStyle: TextStyle(fontWeight: FontWeight.w600, color: c.onSurface)),
+      titleSmall:     GoogleFonts.poppins(textStyle: TextStyle(fontWeight: FontWeight.w500, color: c.onSurface)),
+      bodyLarge:      GoogleFonts.inter(textStyle: TextStyle(color: c.onSurface)),
+      bodyMedium:     GoogleFonts.inter(textStyle: TextStyle(color: c.onSurfaceVariant)),
+      bodySmall:      GoogleFonts.inter(textStyle: TextStyle(color: c.onSurfaceVariant)),
+      labelLarge:     GoogleFonts.inter(textStyle: TextStyle(color: c.onSurface, fontWeight: FontWeight.w600)),
+      labelMedium:    GoogleFonts.inter(textStyle: TextStyle(color: c.onSurfaceVariant)),
+      labelSmall:     GoogleFonts.inter(textStyle: TextStyle(color: c.onSurfaceVariant)),
+    ));
+  }
 
   // Empêche une double-navigation vers OrderTracking dans la même session VM
   bool _activeOrderNavigated = false;
@@ -223,7 +217,6 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         });
       } else if (user == null) {
         _fcmInitialized = false;
-        await NotificationService().clearToken();
       }
     });
   }
@@ -403,41 +396,27 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         }
       },
       theme: themeState.themeData.copyWith(
-        colorScheme: themeState.isDarkMode
-            ? ColorScheme.dark(
-          primary: ThemeState.djiboutiGreen,
-          secondary: ThemeState.djiboutiBlue,
-        )
-            : ColorScheme.fromSeed(seedColor: primaryColor),
-
         // ── AppBar ────────────────────────────────────────────────
         appBarTheme: AppBarTheme(
-          backgroundColor: themeState.isDarkMode
-              ? const Color(0xFF1E1E1E)
-              : ThemeState.djiboutiBlue,
-          foregroundColor: themeState.isDarkMode
-              ? Colors.white
-              : Colors.black87,
+          backgroundColor: themeState.colors.surfaceHigh,
+          foregroundColor: themeState.colors.onSurface,
           elevation: 0,
           titleTextStyle: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: themeState.isDarkMode ? Colors.white : Colors.black87,
+            color: themeState.colors.onSurface,
           ),
           iconTheme: IconThemeData(
-            color: themeState.isDarkMode ? Colors.white : Colors.black87,
+            color: themeState.colors.onSurface,
           ),
         ),
 
-        // ── TextTheme — Poppins (titres) + Inter (corps) ──────────
-        // GoogleFonts.poppinsTextTheme() sert de base : tous les TextStyles
-        // sans fontFamily explicite héritent Poppins via DefaultTextStyle.
-        // On override ensuite body/label avec Inter.
-        textTheme: themeState.isDarkMode ? _darkTextTheme : _lightTextTheme,
+        // ── TextTheme — Poppins (titres) + Inter (corps), couleurs AppColors ──
+        textTheme: _textThemeFrom(themeState.colors),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: primaryColor,
-            foregroundColor: Colors.white,
+            backgroundColor: themeState.colors.primary,
+            foregroundColor: themeState.colors.onPrimary,
             minimumSize: const Size(double.infinity, 40),
             textStyle: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
@@ -450,33 +429,29 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         ),
         inputDecorationTheme: InputDecorationTheme(
           contentPadding: const EdgeInsets.all(defaultPadding),
-          hintStyle:      TextStyle(color: themeState.isDarkMode ? Colors.grey.shade500 : bodyTextColor),
-          labelStyle:     TextStyle(color: themeState.isDarkMode ? Colors.grey.shade400 : bodyTextColor),
+          hintStyle:      TextStyle(color: themeState.colors.onSurfaceVariant),
+          labelStyle:     TextStyle(color: themeState.colors.onSurfaceVariant),
           filled:         true,
-          fillColor: themeState.isDarkMode
-              ? const Color(0xFF2A2A2A)
-              : const Color(0xFFF8F9FA),
+          fillColor: themeState.colors.surfaceHigh,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+            borderSide: BorderSide(color: themeState.colors.outlineVariant),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+            borderSide: BorderSide(color: themeState.colors.outlineVariant),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide:
-            const BorderSide(color: primaryColor, width: 1.5),
+            borderSide: BorderSide(color: themeState.colors.primary, width: 1.5),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.red),
+            borderSide: BorderSide(color: themeState.colors.error),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide:
-            const BorderSide(color: Colors.red, width: 1.5),
+            borderSide: BorderSide(color: themeState.colors.error, width: 1.5),
           ),
         ),
       ),

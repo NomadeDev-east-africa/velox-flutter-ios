@@ -1,7 +1,4 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nomade_client/models/order.dart';
 import 'package:nomade_client/providers/all_providers.dart';
@@ -24,10 +21,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   bool   _attachTriggered = false;
   Order? _completedOrder;
 
-  Timer? _cancelTimer;
-  int    _cancelSecondsLeft  = 120;
-  bool   _cancelTimerStarted = false;
-
   @override
   void initState() {
     super.initState();
@@ -38,26 +31,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
 
   @override
   void dispose() {
-    _cancelTimer?.cancel();
     super.dispose();
-  }
-
-  void _startCancelTimer() {
-    if (_cancelTimerStarted) return;
-    _cancelTimerStarted = true;
-    _cancelTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) { timer.cancel(); return; }
-      setState(() {
-        _cancelSecondsLeft--;
-        if (_cancelSecondsLeft <= 0) timer.cancel();
-      });
-    });
-  }
-
-  String _formatCountdown(int seconds) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
   }
 
   void _tryAttachOrder() {
@@ -90,36 +64,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   String _sessionId(String orderId) =>
       '#${orderId.substring(0, 8).toUpperCase()}';
 
-  Future<void> _showExitDialog() async {
-    final c = _c;
-    final navigator = Navigator.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        title: Text('Quitter le suivi ?',
-            style: TextStyle(color: c.onSurface, fontWeight: FontWeight.bold)),
-        content: Text(
-          'Votre commande continue d\'être préparée. '
-          'Vous pouvez revenir suivre sa progression.',
-          style: TextStyle(color: c.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Rester', style: TextStyle(color: c.primary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Quitter', style: TextStyle(color: c.onSurfaceVariant)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && mounted) navigator.popUntil((r) => r.isFirst);
-  }
-
   // ── BUILD ─────────────────────────────────────────────────────────────────
 
   @override
@@ -143,29 +87,15 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
       backgroundColor: _c.bg,
       elevation: 0,
       automaticallyImplyLeading: false,
-      leading: IconButton(
-        icon: Icon(Icons.menu, color: _c.primary),
-        onPressed: () {},
-      ),
-      title: Image.asset('assets/images/logo-velox.png', height: 36, fit: BoxFit.contain),
-      centerTitle: true,
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 12),
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: _c.surfaceHigh,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: _c.outlineVariant.withValues(alpha: 0.3)),
-          ),
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            icon: Icon(Icons.close, color: _c.onSurfaceVariant, size: 18),
-            onPressed: _showExitDialog,
-          ),
+      title: const Text(
+        'Velox',
+        style: TextStyle(
+          color: Color(0xFF9FFF88),
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
         ),
-      ],
+      ),
+      centerTitle: true,
     );
   }
 
@@ -213,12 +143,6 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
     bool isWatching = false,
     bool isCompletedCache = false,
   }) {
-    if (order.canBeCancelled && !_cancelTimerStarted) {
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _startCancelTimer();
-      });
-    }
-
     final isDelivering = order.status == Order.statusDelivering;
 
     return Column(
@@ -841,141 +765,44 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   // ── BOTTOM ACTIONS ────────────────────────────────────────────────────────
 
   Widget _buildBottomActions(Order order, {bool isCompletedCache = false}) {
+    if (order.status != Order.statusCompleted && !isCompletedCache) {
+      return const SizedBox.shrink();
+    }
     return Container(
       color: _c.bg,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (order.status == Order.statusCompleted || isCompletedCache)
-            GestureDetector(
-              onTap: () => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => OrderCompletedScreen(
-                      order: isCompletedCache ? _completedOrder! : order),
+      child: GestureDetector(
+        onTap: () => Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderCompletedScreen(
+                order: isCompletedCache ? _completedOrder! : order),
+          ),
+        ),
+        child: Container(
+          width: double.infinity,
+          height: 54,
+          color: _c.primary,
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.check_circle, color: _c.onPrimary, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'CONFIRMER LA LIVRAISON',
+                style: TextStyle(
+                  color: _c.onPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
                 ),
               ),
-              child: Container(
-                width: double.infinity,
-                height: 54,
-                color: _c.primary,
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check_circle, color: _c.onPrimary, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'CONFIRMER LA LIVRAISON',
-                      style: TextStyle(
-                        color: _c.onPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          if (order.canBeCancelled && _cancelSecondsLeft > 0) ...[
-            if (order.status == Order.statusCompleted || isCompletedCache)
-              const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              color: _c.surfaceLow,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.timer_outlined, color: _c.onSurfaceVariant, size: 14),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Annulation possible encore ',
-                    style: TextStyle(
-                      color: _c.onSurfaceVariant.withValues(alpha: 0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    _formatCountdown(_cancelSecondsLeft),
-                    style: TextStyle(
-                      color: _c.error,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 6),
-            GestureDetector(
-              onTap: () => _confirmCancel(),
-              child: Container(
-                width: double.infinity,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: _c.error.withValues(alpha: 0.05),
-                  border: Border.all(color: _c.error.withValues(alpha: 0.6)),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'ANNULER LA COMMANDE',
-                  style: TextStyle(
-                    color: _c.error,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
+            ],
+          ),
+        ),
       ),
     );
-  }
-
-  Future<void> _confirmCancel() async {
-    final c = _c;
-    final messenger = ScaffoldMessenger.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        title: Text('Annuler la commande ?',
-            style: TextStyle(color: c.onSurface, fontWeight: FontWeight.bold)),
-        content: Text('Cette action est irréversible.',
-            style: TextStyle(color: c.onSurfaceVariant)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Non', style: TextStyle(color: c.primary)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Oui, annuler', style: TextStyle(color: c.error)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && mounted) {
-      try {
-        await ref.read(activeOrderProvider.notifier).cancelOrder();
-        if (!mounted) return;
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Commande annulée avec succès')),
-        );
-        Navigator.of(context).popUntil((r) => r.isFirst);
-      } catch (e) {
-        if (!mounted) return;
-        messenger.showSnackBar(SnackBar(content: Text('Erreur: $e')));
-      }
-    }
   }
 
   // ── STATES ────────────────────────────────────────────────────────────────

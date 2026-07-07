@@ -98,7 +98,7 @@ class _AvisSection extends StatelessWidget {
                             size: 16,
                             color: i < note
                                 ? Colors.amber
-                                : Colors.grey.shade300,
+                                : Theme.of(context).colorScheme.outlineVariant,
                           )),
                           const Spacer(),
                           Text(

@@ -6,6 +6,7 @@ import 'package:nomade_client/providers/all_providers.dart';
 import 'package:nomade_client/services/rating_service.dart';
 import 'package:nomade_client/services/favorite_drivers_service.dart';
 import 'package:nomade_client/constants.dart';
+import 'package:nomade_client/theme/app_colors.dart';
 import 'package:nomade_client/screens/HomeScreen/home_screen_app.dart';
 import 'taxi_home_screen.dart';
 
@@ -293,10 +294,13 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    final c = isDark ? AppColors.dark : AppColors.light;
+
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: c.bg,
         body: SafeArea(
           child: ScaleTransition(
             scale: _scaleAnimation,
@@ -306,17 +310,17 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
                 children: [
                   _buildSuccessHeader(),
                   const SizedBox(height: 24),
-                  _buildRideSummary(),
+                  _buildRideSummary(c),
                   const SizedBox(height: 20),
-                  _buildDriverInfo(),
+                  _buildDriverInfo(c),
                   const SizedBox(height: 24),
-                  _buildThankYouMessage(),
+                  _buildThankYouMessage(c),
                   const SizedBox(height: 24),
-                  _buildRatingSection(),
+                  _buildRatingSection(c),
                   const SizedBox(height: 20),
-                  _buildFavoriteSection(),
+                  _buildFavoriteSection(c),
                   const SizedBox(height: 32),
-                  _buildActionButtons(),
+                  _buildActionButtons(c),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -354,15 +358,15 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
     );
   }
 
-  Widget _buildRideSummary() {
+  Widget _buildRideSummary(AppColors c) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.shade200,
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 5)),
         ],
@@ -375,40 +379,45 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
+              color: c.onSurface,
             ),
           ),
           const SizedBox(height: 16),
           _buildLocationRow(
+            c: c,
             icon: Icons.radio_button_checked,
             iconColor: primaryColor,
             label: 'Départ',
             address: widget.ride.pickup.address,
           ),
           const SizedBox(height: 8),
-          _buildDottedLine(),
+          _buildDottedLine(c),
           const SizedBox(height: 8),
           _buildLocationRow(
+            c: c,
             icon: Icons.location_on,
             iconColor: Colors.red.shade400,
             label: 'Arrivée',
             address: widget.ride.destination.address,
           ),
-          const Divider(height: 32),
+          Divider(height: 32, color: c.outlineVariant),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStatItem(
+                c: c,
                 icon: Icons.straighten,
                 label: 'Distance',
                 value: '${widget.ride.distance.toStringAsFixed(1)} km',
               ),
               _buildStatItem(
+                c: c,
                 icon: Icons.access_time,
                 label: 'Durée',
                 value: _getRideDuration(),
               ),
               _buildStatItem(
+                c: c,
                 icon: Icons.payments,
                 label: 'Prix',
                 value:
@@ -422,6 +431,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
   }
 
   Widget _buildLocationRow({
+    required AppColors c,
     required IconData icon,
     required Color iconColor,
     required String label,
@@ -442,13 +452,13 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  style: TextStyle(fontSize: 12, color: c.onSurfaceVariant)),
               Text(
                 address,
                 style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey.shade800),
+                    color: c.onSurface),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -459,7 +469,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
     );
   }
 
-  Widget _buildDottedLine() {
+  Widget _buildDottedLine(AppColors c) {
     return Padding(
       padding: const EdgeInsets.only(left: 20),
       child: Column(
@@ -470,7 +480,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
             height: 4,
             margin: const EdgeInsets.symmetric(vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.grey.shade400,
+              color: c.outlineVariant,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -480,6 +490,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
   }
 
   Widget _buildStatItem({
+    required AppColors c,
     required IconData icon,
     required String label,
     required String value,
@@ -488,28 +499,28 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
       children: [
         Icon(icon, color: primaryColor, size: 24),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(label, style: TextStyle(fontSize: 12, color: c.onSurfaceVariant)),
         Text(
           value,
           style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800),
+              color: c.onSurface),
         ),
       ],
     );
   }
 
-  Widget _buildDriverInfo() {
+  Widget _buildDriverInfo(AppColors c) {
     if (widget.ride.driverId == null) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.shade200,
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 5)),
         ],
@@ -536,11 +547,11 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
                   style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800),
+                      color: c.onSurface),
                 ),
                 const SizedBox(height: 4),
                 Text(widget.ride.vehicleType,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 14, color: c.onSurfaceVariant)),
               ],
             ),
           ),
@@ -556,7 +567,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
     );
   }
 
-  Widget _buildThankYouMessage() {
+  Widget _buildThankYouMessage(AppColors c) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -582,14 +593,14 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
             'Votre course s\'est bien déroulée et nous espérons vous revoir bientôt !',
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: 15, color: Colors.grey.shade700, height: 1.5),
+                fontSize: 15, color: c.onSurfaceVariant, height: 1.5),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRatingSection() {
+  Widget _buildRatingSection(AppColors c) {
     if (_ratingSubmitted) {
       return Container(
         padding: const EdgeInsets.all(24),
@@ -619,11 +630,11 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.shade200,
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 5)),
         ],
@@ -635,7 +646,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
             style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade800),
+                color: c.onSurface),
           ),
           const SizedBox(height: 20),
           Row(
@@ -653,7 +664,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
                     size: 40,
                     color: starValue <= _selectedRating
                         ? Colors.amber
-                        : Colors.grey.shade400,
+                        : c.outlineVariant,
                   ),
                 ),
               );
@@ -671,7 +682,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
                           : _selectedRating == 2
                               ? 'Peut mieux faire'
                               : 'Pas terrible',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 14, color: c.onSurfaceVariant),
             ),
           ],
           const SizedBox(height: 20),
@@ -679,11 +690,12 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
             controller: _reviewController,
             maxLines: 3,
             maxLength: 200,
+            style: TextStyle(color: c.onSurface),
             decoration: InputDecoration(
               hintText: 'Commentaire (optionnel)',
-              hintStyle: TextStyle(color: Colors.grey.shade400),
+              hintStyle: TextStyle(color: c.onSurfaceVariant),
               filled: true,
-              fillColor: Colors.grey.shade50,
+              fillColor: c.surfaceHigh,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -724,15 +736,15 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
     );
   }
 
-  Widget _buildFavoriteSection() {
+  Widget _buildFavoriteSection(AppColors c) {
     if (widget.ride.driverId == null) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: c.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _isFavorite ? Colors.red.shade100 : Colors.grey.shade200,
+          color: _isFavorite ? Colors.red.shade100 : c.outlineVariant,
           width: 2,
         ),
       ),
@@ -744,14 +756,14 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
             decoration: BoxDecoration(
               color: _isFavorite
                   ? Colors.red.shade50
-                  : Colors.grey.shade100,
+                  : c.surfaceHigh,
               shape: BoxShape.circle,
             ),
             child: Icon(
               _isFavorite ? Icons.favorite : Icons.favorite_border,
               color: _isFavorite
                   ? Colors.red.shade400
-                  : Colors.grey.shade400,
+                  : c.onSurfaceVariant,
               size: 26,
             ),
           ),
@@ -765,14 +777,14 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
                   style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800),
+                      color: c.onSurface),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _isFavorite
                       ? 'Retrouvez facilement ce chauffeur'
                       : 'Retrouvez rapidement ce chauffeur pour vos prochaines courses',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: c.onSurfaceVariant),
                 ),
               ],
             ),
@@ -794,7 +806,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(AppColors c) {
     return Column(
       children: [
         // ✅ PHASE 3 : context.read<RideProvider>().clearCurrentRide()
@@ -841,7 +853,7 @@ class _RideCompletionScreenState extends ConsumerState<RideCompletionScreen>
             'Retour à l\'accueil',
             style: TextStyle(
               fontSize: 15,
-              color: Colors.grey.shade600,
+              color: c.onSurfaceVariant,
               decoration: TextDecoration.underline,
             ),
           ),

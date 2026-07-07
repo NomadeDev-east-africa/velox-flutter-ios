@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:nomade_client/constants.dart';
+import '../../../theme/app_colors.dart';
 import '../../../services/location_service.dart';
 import '../../../providers/all_providers.dart';
 
@@ -255,21 +256,21 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
       ? 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'
       : 'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png';
 
-  Widget _buildAddressLoadingIndicator() {
+  Widget _buildAddressLoadingIndicator(AppColors c) {
     return Column(
       children: [
         Container(
           height: 20,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: c.surfaceHigh,
             borderRadius: BorderRadius.circular(8),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
-              backgroundColor: Colors.grey.shade200,
-              color: Colors.red.withValues(alpha:0.5),
+              backgroundColor: c.surfaceHigh,
+              color: c.error.withValues(alpha:0.5),
               minHeight: 20,
             ),
           ),
@@ -279,7 +280,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
           'Chargement de l\'adresse...',
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey.shade500,
+            color: c.onSurfaceVariant,
           ),
         ),
       ],
@@ -288,6 +289,8 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeNotifierProvider).isDarkMode;
+    final c = isDark ? AppColors.dark : AppColors.light;
     final locationState = ref.watch(locationNotifierProvider);
 
     final deliveryPosition = _customDeliveryPosition ??
@@ -297,6 +300,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
     final isLoadingAddress  = locationState.isLoading;
 
     return Scaffold(
+      backgroundColor: c.bg,
       appBar: AppBar(
         title: const Text('Choisir l\'adresse de livraison'),
         elevation: 0,
@@ -377,7 +381,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
             right: 16,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: c.surfaceLow,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -390,14 +394,14 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
               child: TextField(
                 controller: _searchController,
                 onChanged: _searchPlaces,
-                style: const TextStyle(fontSize: 17),
+                style: TextStyle(fontSize: 17, color: c.onSurface),
                 decoration: InputDecoration(
                   hintText: 'Rechercher une adresse...',
-                  hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 17),
+                  hintStyle: TextStyle(color: c.onSurfaceVariant, fontSize: 17),
                   prefixIcon: const Icon(Icons.search, color: secondaryColor, size: 26),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                    icon: const Icon(Icons.clear, size: 20),
+                    icon: Icon(Icons.clear, size: 20, color: c.onSurfaceVariant),
                     onPressed: () {
                       setState(() {
                         _searchController.clear();
@@ -424,7 +428,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
               bottom: MediaQuery.of(context).padding.bottom + 200,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: c.surfaceLow,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: const [
                     BoxShadow(
@@ -446,7 +450,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade700,
+                              color: c.onSurface,
                             ),
                           ),
                           const Spacer(),
@@ -454,13 +458,13 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                             '${_searchResults.length} trouvé(s)',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.shade600,
+                              color: c.onSurfaceVariant,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const Divider(height: 0),
+                    Divider(height: 0, color: c.outlineVariant),
                     Expanded(
                       child: _isSearching
                           ? Center(
@@ -471,7 +475,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                             const SizedBox(height: 16),
                             Text(
                               'Recherche en cours...',
-                              style: TextStyle(color: Colors.grey.shade600),
+                              style: TextStyle(color: c.onSurfaceVariant),
                             ),
                           ],
                         ),
@@ -484,14 +488,14 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                             Icon(
                               Icons.location_off,
                               size: 60,
-                              color: Colors.grey.shade300,
+                              color: c.outlineVariant,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Aucun résultat trouvé',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey.shade600,
+                                color: c.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -499,7 +503,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                               'Essayez avec d\'autres termes',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade500,
+                                color: c.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -508,7 +512,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                           : ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: _searchResults.length,
-                        separatorBuilder: (_, _) => const Divider(height: 16),
+                        separatorBuilder: (_, _) => Divider(height: 16, color: c.outlineVariant),
                         itemBuilder: (context, index) {
                           final place = _searchResults[index];
                           return ListTile(
@@ -527,9 +531,10 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                             ),
                             title: Text(
                               place.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
+                                color: c.onSurface,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -538,7 +543,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                               '${place.latitude.toStringAsFixed(4)}, ${place.longitude.toStringAsFixed(4)}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade600,
+                                color: c.onSurfaceVariant,
                               ),
                             ),
                             onTap: () => _selectSearchResult(place),
@@ -559,10 +564,10 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
             right: 0,
             child: Container(
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                boxShadow: [
+              decoration: BoxDecoration(
+                color: c.surfaceLow,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                boxShadow: const [
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 20,
@@ -598,22 +603,22 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                             Text(
                               'Livrer à',
                               style: TextStyle(
-                                color: Colors.grey.shade600,
+                                color: c.onSurfaceVariant,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(height: 6),
                             isLoadingAddress
-                                ? _buildAddressLoadingIndicator()
+                                ? _buildAddressLoadingIndicator(c)
                                 : Text(
                               deliveryAddress ?? 'Déplacez la carte pour choisir',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: deliveryAddress == null
-                                    ? Colors.grey.shade600
-                                    : Colors.black87,
+                                    ? c.onSurfaceVariant
+                                    : c.onSurface,
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -634,7 +639,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                           Icon(
                             Icons.info_outline,
                             size: 16,
-                            color: Colors.grey.shade600,
+                            color: c.onSurfaceVariant,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -644,7 +649,7 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
                                   : 'Déplacez la carte pour ajuster l\'adresse exacte',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.grey.shade600,
+                                color: c.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -738,14 +743,17 @@ class _DeliveryAddressPickerScreenState extends ConsumerState<DeliveryAddressPic
             top: MediaQuery.of(context).padding.top + 16,
             right: 16,
             child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: c.surfaceLow,
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8)],
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
               ),
               child: IconButton(
                 iconSize: 24,
-                icon: Icon(_isDarkMap ? Icons.light_mode : Icons.dark_mode),
+                icon: Icon(
+                  _isDarkMap ? Icons.light_mode : Icons.dark_mode,
+                  color: c.onSurface,
+                ),
                 onPressed: () {
                   debugPrint('🎨 Changement thème: $_isDarkMap → ${!_isDarkMap}');
                   setState(() => _isDarkMap = !_isDarkMap);

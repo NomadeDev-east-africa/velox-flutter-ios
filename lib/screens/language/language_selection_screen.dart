@@ -66,7 +66,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                       : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isSelected ? primaryColor : Colors.grey.shade300,
+                    color: isSelected ? primaryColor : Theme.of(context).colorScheme.outlineVariant,
                     width: isSelected ? 2 : 1,
                   ),
                 ),

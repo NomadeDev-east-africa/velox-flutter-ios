@@ -81,6 +81,16 @@ class NotificationService {
     // 3. Initialiser le plugin de notifications locales
     await _initLocalNotifications();
 
+    // ✅ iOS : afficher la notif (alert/badge/son) quand l'app est au premier plan.
+    // Sans ça, sur iOS, aucune bannière système ne s'affiche en foreground.
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    }
+
     // 4. Configurer les handlers (une seule fois par VM lifetime)
     if (!_handlersSetup) {
       _setupMessageHandlers();
@@ -202,6 +212,17 @@ class NotificationService {
 
   /// ✅ Rafraîchir et sauvegarder le token
   Future<void> _refreshAndSaveToken() async {
+    // ✅ FIX iOS : le token APNs doit être disponible AVANT d'appeler getToken(),
+    // sinon FCM renvoie null (race condition fréquente au 1er lancement de l'app).
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      final apnsToken = await _waitForApnsToken();
+      if (apnsToken == null) {
+        debugPrint(
+            '⚠️ [NotificationService] Token APNs indisponible après plusieurs tentatives — token FCM non récupéré');
+        return;
+      }
+    }
+
     final token = await _messaging.getToken();
     if (token != null) {
       debugPrint(
@@ -210,6 +231,23 @@ class NotificationService {
     } else {
       debugPrint('⚠️ [NotificationService] Token FCM null');
     }
+  }
+
+  /// ✅ iOS : attend que le token APNs soit prêt (retry avec délai).
+  /// `getToken()` peut échouer/renvoyer null si appelé avant que l'OS ait
+  /// fini d'enregistrer l'app auprès d'APNs.
+  Future<String?> _waitForApnsToken({int maxAttempts = 5}) async {
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      final apnsToken = await _messaging.getAPNSToken();
+      if (apnsToken != null) {
+        debugPrint('📲 [NotificationService] Token APNs prêt (tentative $attempt)');
+        return apnsToken;
+      }
+      debugPrint(
+          '⏳ [NotificationService] Token APNs pas encore prêt (tentative $attempt/$maxAttempts)');
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    return null;
   }
 
   /// ✅ Sauvegarder le token FCM

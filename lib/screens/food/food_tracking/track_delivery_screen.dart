@@ -168,36 +168,29 @@ class _TrackDeliveryScreenState extends ConsumerState<TrackDeliveryScreen> {
               height: 48,
               child: Container(
                 decoration: BoxDecoration(
-                  color: c.primary,
+                  color: const Color(0xFF9FFF88),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: c.primary.withValues(alpha: 0.4),
+                      color: const Color(0xFF9FFF88).withValues(alpha: 0.4),
                       blurRadius: 12,
                       spreadRadius: 2,
                     ),
                   ],
                 ),
-                child: Icon(Icons.delivery_dining, color: c.onPrimary, size: 26),
+                child: const Icon(Icons.delivery_dining, color: Color(0xFF026400), size: 26),
               ),
             ),
           ];
 
           if (destination != null) {
             markers.add(
-              const Marker(
-                point: LatLng(0, 0), // remplacé ci-dessous
+              Marker(
+                point: destination,
                 width: 44,
                 height: 44,
-                child: Icon(Icons.location_on, color: Colors.redAccent, size: 44),
+                child: const Icon(Icons.person_pin_circle, color: Colors.blue, size: 44),
               ),
-            );
-            // Remplacer le marker destination avec la vraie position
-            markers.last = Marker(
-              point: destination,
-              width: 44,
-              height: 44,
-              child: const Icon(Icons.location_on, color: Colors.redAccent, size: 44),
             );
           }
 

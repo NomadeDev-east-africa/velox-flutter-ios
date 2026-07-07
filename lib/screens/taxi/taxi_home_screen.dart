@@ -316,21 +316,14 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
               const SizedBox(height: 10),
 
               // ── Titre ──────────────────────────────────────
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [drapeauVert, drapeauBleu, drapeauRouge],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ).createShader(bounds),
-                child: Text(
-                  hasDestination
-                      ? '${tr('ride_ready')} ✓'
-                      : '${tr('where_to_today')} 🌍',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+              Text(
+                hasDestination
+                    ? '${tr('ride_ready')} ✓'
+                    : '${tr('where_to_today')} 🌍',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: kNeonGreen,
                 ),
               ),
 
@@ -348,22 +341,21 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
 
               const SizedBox(height: 18),
 
-              // ── Titre sélecteur véhicule (si destination choisie) ──
-              if (hasDestination)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      tr('choose_vehicle'),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _c.onSurface,
-                      ),
+              // ── Titre sélecteur véhicule (toujours visible) ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    tr('choose_vehicle'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _c.onSurface,
                     ),
                   ),
                 ),
+              ),
 
               const SizedBox(height: 12),
 
@@ -397,16 +389,13 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [drapeauVert, drapeauBleu, drapeauRouge],
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
-              ),
+              color: kNeonGreen.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Text('🇩🇯', style: TextStyle(fontSize: 20)),
           ),
           const SizedBox(width: 8),
-          const Text('Velox', style: TextStyle(color: vertPrincipal, fontSize: 22, fontWeight: FontWeight.bold)),
+          const Text('Velox', style: TextStyle(color: kNeonGreen, fontSize: 22, fontWeight: FontWeight.bold)),
         ],
       ),
       actions: [
@@ -511,12 +500,9 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
             child: Container(
               width: 16, height: 16,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [drapeauVert, vertPrincipal],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
-                ),
+                color: kNeonGreen,
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: drapeauVert.withValues(alpha:0.4), blurRadius: 6)],
+                boxShadow: [BoxShadow(color: kNeonGreen.withValues(alpha:0.4), blurRadius: 6)],
               ),
             ),
           ),
@@ -662,12 +648,12 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
                       scale: _pulseAnimation,
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [drapeauVert, vertPrincipal]),
+                          color: secondaryColor,
                           shape: BoxShape.circle,
                           border: Border.all(color: blanc, width: 3),
-                          boxShadow: [BoxShadow(color: drapeauVert.withValues(alpha:0.5), blurRadius: 20, spreadRadius: 2)],
+                          boxShadow: [BoxShadow(color: secondaryColor.withValues(alpha:0.5), blurRadius: 20, spreadRadius: 2)],
                         ),
-                        child: const Icon(Icons.my_location, color: blanc, size: 28),
+                        child: const Icon(Icons.person_pin_circle, color: blanc, size: 28),
                       ),
                     ),
                   ),
@@ -855,14 +841,10 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
         duration: const Duration(milliseconds: 300),
         height: 60,
         decoration: BoxDecoration(
-          gradient: canTap
-              ? const LinearGradient(
-              colors: [drapeauVert, vertPrincipal, drapeauBleu],
-              begin: Alignment.topLeft, end: Alignment.bottomRight)
-              : LinearGradient(colors: [Colors.grey.shade300, Colors.grey.shade400]),
+          color: canTap ? kNeonGreen : Colors.grey.shade400,
           borderRadius: BorderRadius.circular(30),
           boxShadow: canTap
-              ? [BoxShadow(color: drapeauVert.withValues(alpha:0.35), blurRadius: 14, offset: const Offset(0, 8))]
+              ? [BoxShadow(color: kNeonGreen.withValues(alpha:0.35), blurRadius: 14, offset: const Offset(0, 8))]
               : [],
         ),
         child: ElevatedButton(
@@ -878,14 +860,14 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
             children: [
               Icon(
                 canTap ? Icons.search : Icons.location_searching,
-                color: canTap ? blanc : Colors.white70, size: 20,
+                color: canTap ? kNeonGreenDark : Colors.white70, size: 20,
               ),
               const SizedBox(width: 10),
               Text(
                 canTap ? tr('choose_destination') : tr('locating_in_progress'),
                 style: TextStyle(
                   fontSize: 17, fontWeight: FontWeight.bold,
-                  color: canTap ? blanc : Colors.white70, letterSpacing: 0.3,
+                  color: canTap ? kNeonGreenDark : Colors.white70, letterSpacing: 0.3,
                 ),
               ),
             ],
@@ -905,14 +887,10 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
       child: Container(
         height: 62,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [drapeauVert, vertPrincipal, drapeauBleu],
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-          ),
+          color: kNeonGreen,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
-            BoxShadow(color: drapeauVert.withValues(alpha:0.4), blurRadius: 16, offset: const Offset(0, 8)),
-            BoxShadow(color: drapeauBleu.withValues(alpha:0.2), blurRadius: 20, offset: const Offset(0, 4)),
+            BoxShadow(color: kNeonGreen.withValues(alpha:0.4), blurRadius: 16, offset: const Offset(0, 8)),
           ],
         ),
         child: ElevatedButton(
@@ -925,20 +903,20 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.local_taxi, color: blanc, size: 22),
+              const Icon(Icons.local_taxi, color: kNeonGreenDark, size: 22),
               const SizedBox(width: 10),
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(tr('confirm_ride'),
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: blanc, letterSpacing: 0.3)),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: kNeonGreenDark, letterSpacing: 0.3)),
                   Text('${price.toStringAsFixed(0)} FDJ · ${_selectedRide.name}',
-                      style: TextStyle(fontSize: 12, color: blanc.withValues(alpha:0.85))),
+                      style: const TextStyle(fontSize: 12, color: kNeonGreenDark)),
                 ],
               ),
               const SizedBox(width: 10),
-              const Icon(Icons.arrow_forward, color: blanc, size: 20),
+              const Icon(Icons.arrow_forward, color: kNeonGreenDark, size: 20),
             ],
           ),
         ),
@@ -968,17 +946,17 @@ class _TaxiHomeScreenState extends ConsumerState<TaxiHomeScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [drapeauVert, vertPrincipal]),
+        color: kNeonGreen,
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: drapeauVert.withValues(alpha:0.3), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: kNeonGreen.withValues(alpha:0.3), blurRadius: 8)],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.touch_app, color: blanc, size: 14),
+          const Icon(Icons.touch_app, color: kNeonGreenDark, size: 14),
           const SizedBox(width: 6),
           Text(tr('tap_to_move'),
-              style: const TextStyle(color: blanc, fontSize: 12, fontWeight: FontWeight.w600)),
+              style: const TextStyle(color: kNeonGreenDark, fontSize: 12, fontWeight: FontWeight.w600)),
         ],
       ),
     );

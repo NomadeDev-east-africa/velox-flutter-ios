@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nomade_client/services/auth_service.dart';
 import 'package:nomade_client/constants.dart';
+import 'package:nomade_client/screens/homeScreen/home_screen_app.dart';
 import 'number_verify_screen.dart';
 
 class PhoneLoginScreen extends StatefulWidget {
@@ -57,9 +58,11 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         verificationCompleted: (credential) {
           if (mounted) {
             setState(() => _isLoading = false);
-            Navigator.pushNamedAndRemoveUntil(
+            Navigator.pushAndRemoveUntil(
               context,
-              '/home_food',
+              MaterialPageRoute(
+                builder: (context) => const HomeScreenApp(),
+              ),
               (_) => false,
             );
           }
@@ -116,14 +119,14 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 'Votre numéro',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: titleColor,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Nous enverrons un code SMS de vérification\nà votre numéro Djibouti.',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: bodyTextColor,
+                  color: theme.colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
               ),
@@ -159,22 +162,22 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   decoration: InputDecoration(
                     hintText: '77 XX XX XX',
                     hintStyle: TextStyle(
-                      color: Colors.grey.shade400,
+                      color: theme.colorScheme.onSurfaceVariant,
                       letterSpacing: 1,
                       fontWeight: FontWeight.w400,
                       fontSize: 18,
                     ),
-                    prefixIcon: _DjiboutiPrefix(),
+                    prefixIcon: _DjiboutiPrefix(colors: theme.colorScheme),
                     prefixIconConstraints: const BoxConstraints(minWidth: 0),
                     filled: true,
-                    fillColor: Colors.grey.shade50,
+                    fillColor: theme.colorScheme.surfaceContainerHigh,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
+                      borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
+                      borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -207,7 +210,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                       'Numéro complet : +253 ${value.text}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: bodyTextColor,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   );
@@ -256,7 +259,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                   onPressed: _isLoading ? null : _sendOTP,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
-                    disabledBackgroundColor: Colors.grey.shade200,
+                    disabledBackgroundColor: theme.colorScheme.outlineVariant,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -294,6 +297,10 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
 // ── Widget préfixe Djibouti ───────────────────────────────────────────────────
 
 class _DjiboutiPrefix extends StatelessWidget {
+  final ColorScheme colors;
+
+  const _DjiboutiPrefix({required this.colors});
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -305,17 +312,17 @@ class _DjiboutiPrefix extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '+253',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: titleColor,
+              color: colors.onSurface,
             ),
           ),
           const SizedBox(width: 10),
           Container(
             width: 1,
             height: 24,
-            color: Colors.grey.shade300,
+            color: colors.outlineVariant,
           ),
           const SizedBox(width: 10),
         ],

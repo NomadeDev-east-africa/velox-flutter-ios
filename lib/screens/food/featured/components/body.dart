@@ -113,15 +113,15 @@ class _BodyState extends State<Body> {
           ),
         )
             : _categoryMenus.isEmpty
-            ? const Center(
+            ? Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.category, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
+              Icon(Icons.category, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              const SizedBox(height: 16),
               Text(
                 'Aucune catégorie disponible',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ],
           ),

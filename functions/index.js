@@ -1047,7 +1047,8 @@ exports.onOrderCreated = onDocumentCreated("orders/{orderId}", async (event) => 
     const deliveryFee = order.deliveryFee ?? 500;
 
     // ── Fidélité : réduction plafonnée aux frais de livraison ──
-    const POINT_VALUE  = 15;
+    // 1 point = 2 FDJ (doit rester aligné avec Constants.POINT_VALUE côté apps clientes).
+    const POINT_VALUE  = 2;
     const maxPoints    = Math.floor(deliveryFee / POINT_VALUE);
     const cappedPoints = Math.min(
       Math.max(0, Math.floor(order.pointsUsed ?? 0)),

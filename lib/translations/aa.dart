@@ -178,6 +178,7 @@ const Map<String, String> aa = {
   'hello': 'Nagaa',
   'tagline': 'Riix, Nasa, nanu baaha',
   'loyalty_points': 'Daacadnimo tigsi',
+  'login_for_loyalty_points': 'Gal cussi ku ableela daacadnimo tigsiiy',
   'one_order_points': '1 amri = 10 tigsi',
   'statistics': 'Tirakoob',
   'rides': 'Safarro',

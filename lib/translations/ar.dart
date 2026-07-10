@@ -177,6 +177,7 @@ const Map<String, String> ar = {
   'hello': 'مرحبا',
   'tagline': 'اطلب، استرخِ، نوصّل',
   'loyalty_points': 'نقاط الولاء',
+  'login_for_loyalty_points': 'سجّل الدخول لعرض نقاط الولاء الخاصة بك',
   'one_order_points': 'طلب واحد = 10 نقاط',
   'statistics': 'الإحصائيات',
   'rides': 'الرحلات',

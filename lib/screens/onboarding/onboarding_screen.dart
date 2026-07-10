@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth-firebase/auth/sign_in_screen.dart';
+import '../homeScreen/home_screen_app.dart';
 import 'components/onboard_content.dart';
 import 'package:nomade_client/providers/theme_notifier.dart';
 import 'package:nomade_client/theme/app_colors.dart';
@@ -54,6 +55,21 @@ class OnboardingScreen extends ConsumerWidget {
                     fontSize: 15,
                     letterSpacing: 1.2,
                   ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeScreenApp()),
+              ),
+              child: Text(
+                'Continuer sans compte',
+                style: TextStyle(
+                  color: c.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
             ),

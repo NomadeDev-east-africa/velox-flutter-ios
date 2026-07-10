@@ -131,7 +131,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${tr('hello')} $firstName',
+                  firstName.isEmpty ? tr('welcome') : '${tr('hello')} $firstName',
                   style: GoogleFonts.poppins(
                     color: c.onSurface,
                     fontSize: 20,
@@ -165,6 +165,38 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
           fontWeight: FontWeight.w300,
           letterSpacing: 1.4,
           height: 1.3,
+        ),
+      ),
+    );
+  }
+
+  // ── POINTS FIDÉLITÉ (invité) ──────────────────────────────────────────────
+  Widget _buildLoyaltyGuestPrompt(AppColors c) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SignInScreen()),
+      ),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        decoration: BoxDecoration(
+          color: c.surfaceLow,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: c.outlineVariant.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.card_giftcard_rounded, color: c.primary, size: 28),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                tr('login_for_loyalty_points'),
+                style: TextStyle(color: c.onSurface, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: c.onSurfaceVariant),
+          ],
         ),
       ),
     );
@@ -436,13 +468,18 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
 
   // ── ACTIONS RAPIDES ───────────────────────────────────────────────────────
   Widget _buildQuickActions(AppColors c) {
+    final isAuthenticated = ref.watch(userNotifierProvider).isAuthenticated;
     final actions = [
       {
         'icon': Icons.history_rounded,
         'label': tr('history'),
         'onTap': () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const OrderHistoryScreen()),
+          MaterialPageRoute(
+            builder: (_) => isAuthenticated
+                ? const OrderHistoryScreen()
+                : const SignInScreen(),
+          ),
         ),
       },
       {
@@ -550,6 +587,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
 
   // ── HOME PAGE ─────────────────────────────────────────────────────────────
   Widget _buildHomePage(String firstName, AppColors c) {
+    final isAuthenticated = ref.watch(userNotifierProvider).isAuthenticated;
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 100),
@@ -558,7 +596,7 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
         children: [
           _buildHeader(firstName, c),
           _buildTagline(c),
-          _buildLoyaltyCard(c),
+          isAuthenticated ? _buildLoyaltyCard(c) : _buildLoyaltyGuestPrompt(c),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 14),
             child: Text(
@@ -666,51 +704,12 @@ class _HomeScreenAppState extends ConsumerState<HomeScreenApp> {
       );
     }
 
-    if (!userState.isAuthenticated) {
-      return Scaffold(
-        backgroundColor: c.bg,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lock_outline, color: c.primary, size: 60),
-              const SizedBox(height: 24),
-              Text(
-                tr('login_required'),
-                style: TextStyle(
-                  color: c.onSurface,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                tr('login_to_access'),
-                style: TextStyle(color: c.onSurfaceVariant, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () => Navigator.pushReplacement(context,
-                    MaterialPageRoute(builder: (_) => const SignInScreen())),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: c.primary,
-                  foregroundColor: c.onPrimary,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 40, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text(tr('login'),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final firstName = userState.displayName.split(' ').first;
+    // Invités : pas de compte requis pour parcourir l'app (accueil, VTC,
+    // restaurants) — la connexion n'est demandée qu'au moment de réserver/
+    // commander (voir order_details_screen.dart et ride_confirmation_screen.dart).
+    final firstName = userState.isAuthenticated
+        ? userState.displayName.split(' ').first
+        : '';
 
     return Scaffold(
       backgroundColor: c.bg,

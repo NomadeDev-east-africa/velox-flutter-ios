@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nomade_client/constants.dart';
 import 'package:nomade_client/providers/all_providers.dart';
+import 'package:nomade_client/screens/auth-firebase/auth/sign_in_screen.dart';
 import 'package:nomade_client/theme/app_colors.dart';
 import 'package:nomade_client/translations/app_translations.dart';
 import 'package:nomade_client/models/place.dart';
@@ -41,7 +42,16 @@ class _RideConfirmationScreenState extends ConsumerState<RideConfirmationScreen>
 
   Future<void> _confirmRide() async {
     final userState = ref.read(userNotifierProvider);
-    if (!userState.isAuthenticated) return;
+    if (!userState.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('must_login_order')), backgroundColor: _c.error),
+      );
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SignInScreen()),
+      );
+      return;
+    }
 
     try {
       final price = widget.tripDetails.selectedRide

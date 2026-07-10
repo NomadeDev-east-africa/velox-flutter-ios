@@ -177,6 +177,7 @@ const Map<String, String> en = {
   'hello': 'Hello',
   'tagline': 'Click, Chill, we deliver',
   'loyalty_points': 'Loyalty points',
+  'login_for_loyalty_points': 'Log in to see your loyalty points',
   'one_order_points': '1 order = 10 pts',
   'statistics': 'Statistics',
   'rides': 'Rides',

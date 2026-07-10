@@ -22,6 +22,7 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   final AuthService _authService = AuthService();
   bool _isLoadingGoogle = false;
+  bool _isLoadingApple = false;
 
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoadingGoogle = true);
@@ -54,6 +55,40 @@ class _SignInScreenState extends State<SignInScreen> {
     } finally {
       if (mounted) {
         setState(() => _isLoadingGoogle = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() => _isLoadingApple = true);
+
+    try {
+      final user = await _authService.signInWithApple();
+
+      if (user != null && mounted) {
+        await NotificationService().refreshTokenForUser();
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HomeScreenApp(),
+          ),
+              (_) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingApple = false);
       }
     }
   }
@@ -147,6 +182,25 @@ class _SignInScreenState extends State<SignInScreen> {
                     BlendMode.srcIn,
                   ),
                 ),
+              ),
+              const SizedBox(height: defaultPadding),
+
+              // Apple - CONFIGURÉ FIREBASE (requis avec Google, guideline 4.8)
+              SocialButton(
+                press: _isLoadingApple ? () {} : _signInWithApple,
+                text: _isLoadingApple ? "Connexion..." : "Connect with Apple",
+                color: Colors.black,
+                icon: _isLoadingApple
+                    ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                    AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                    : const Icon(Icons.apple, color: Colors.white, size: 22),
               ),
               const SizedBox(height: defaultPadding),
 

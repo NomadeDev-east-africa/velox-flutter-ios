@@ -178,6 +178,7 @@ const Map<String, String> so = {
   'hello': 'Salaan',
   'tagline': 'Riix, Naso, waan keenaynaa',
   'loyalty_points': 'Dhibcaha daacadnimada',
+  'login_for_loyalty_points': 'Gal si aad u aragto dhibcahaaga daacadnimada',
   'one_order_points': '1 dalab = 10 dhibco',
   'statistics': 'Tirakoobka',
   'rides': 'Safarrada',

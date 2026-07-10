@@ -342,8 +342,8 @@ service cloud.firestore {
     // ════════════════════════════════════════════════════════════
 
     match /restaurants/{restaurantId} {
-      // Catalogue accessible à tout client connecté
-      allow read: if isAuth();
+      // Catalogue public — navigable sans compte (parcours invité)
+      allow read: if true;
       allow create: if isAuth() && isOwner(restaurantId);
       allow delete: if false;
       allow update: if isAuth() && isOwner(restaurantId)
@@ -355,15 +355,17 @@ service cloud.firestore {
            ]);
 
       // Avis clients — écrits par onOrderRated (CF) uniquement
+      // Lecture publique (parcours invité) — écriture inchangée
       match /reviews/{reviewId} {
-        allow read:  if isAuth();
+        allow read:  if true;
         allow write: if false;
       }
 
       // FIX #7 — Avis clients : orderId requis, vérifié contre une commande completed
       // Le client doit inclure orderId dans le document avis
+      // Lecture publique (parcours invité) — écriture inchangée
       match /avis/{avisId} {
-        allow read: if isAuth();
+        allow read: if true;
         allow create: if isAuth()
           && request.resource.data.userId == request.auth.uid
           && isValidRating(request.resource.data.note)
@@ -374,9 +376,9 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
-      // Menu — géré par le restaurant
+      // Menu — géré par le restaurant. Lecture publique (parcours invité).
       match /menu/{menuId} {
-        allow read:  if isAuth();
+        allow read:  if true;
         allow write: if isAuth() && isOwner(restaurantId);
       }
     }
@@ -416,11 +418,11 @@ service cloud.firestore {
     //          restaurantId, isAvailable, preparationTime,
     //          createdAt, updatedAt
     // Écriture : restaurant propriétaire uniquement
-    // Lecture  : tout client authentifié (catalogue)
+    // Lecture  : publique (catalogue, parcours invité)
     // ════════════════════════════════════════════════════════════
 
     match /menu_items/{itemId} {
-      allow read: if isAuth();
+      allow read: if true;
       // FIX #6 — price > 0 obligatoire à la création
       allow create: if isAuth()
         && request.resource.data.restaurantId == request.auth.uid
@@ -442,11 +444,11 @@ service cloud.firestore {
     // Champs : label, type, discountPercent, targetId, targetName,
     //          restaurantId, isActive, startDate, endDate, createdAt
     // Écriture : réservée CF / Admin SDK (jamais depuis le client)
-    // Lecture  : tout client authentifié
+    // Lecture  : publique (catalogue, parcours invité)
     // ════════════════════════════════════════════════════════════
 
     match /promotions/{promoId} {
-      allow read:  if isAuth();
+      allow read:  if true;
       allow write: if false;
     }
 

@@ -7,6 +7,7 @@ import 'package:nomade_client/constants.dart';
 import 'package:nomade_client/translations/app_translations.dart';
 import 'package:nomade_client/models/order_item.dart';
 import 'package:nomade_client/providers/all_providers.dart';
+import 'package:nomade_client/screens/auth-firebase/auth/sign_in_screen.dart';
 import 'package:nomade_client/screens/food/food_tracking/delivery_address_picker_screen.dart';
 import 'package:nomade_client/screens/food/pending_order/pending_order_screen.dart';
 import 'package:nomade_client/theme/app_colors.dart';
@@ -750,8 +751,11 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      _showSnack(tr('must_login_order'),
-          backgroundColor: Colors.red);
+      _showSnack(tr('must_login_order'), backgroundColor: Colors.red);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SignInScreen()),
+      );
       return;
     }
 

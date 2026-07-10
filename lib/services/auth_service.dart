@@ -1,7 +1,12 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:nomade_client/services/notification_service.dart';
 
 /// Service d'authentification Firebase — convention camelCase unifiée
@@ -146,6 +151,68 @@ class AuthService {
     } catch (e) {
       throw 'Erreur connexion Google: ${e.toString()}';
     }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // CONNEXION Apple
+  // ════════════════════════════════════════════════════════════
+
+  Future<firebase_auth.User?> signInWithApple() async {
+    try {
+      final rawNonce = _generateNonce();
+      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+
+      final oauthCredential = firebase_auth.OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      final user = userCredential.user;
+
+      if (user != null) {
+        // Apple ne renvoie le nom qu'à la toute première autorisation —
+        // on le récupère ici pour l'écrire dans Firebase avant que ce
+        // soit perdu (les connexions suivantes ne le renverront plus).
+        final fullName = [appleCredential.givenName, appleCredential.familyName]
+            .whereType<String>()
+            .join(' ')
+            .trim();
+        if (fullName.isNotEmpty &&
+            (user.displayName == null || user.displayName!.isEmpty)) {
+          await user.updateDisplayName(fullName);
+        }
+
+        await _createOrUpdateUserDocument(user);
+        await _notificationService.initialize(user.uid);
+
+        debugPrint('✅ [AuthService] Apple Sign In: ${user.uid}');
+      }
+
+      return user;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) return null;
+      throw 'Erreur connexion Apple: ${e.message}';
+    } catch (e) {
+      throw 'Erreur connexion Apple: ${e.toString()}';
+    }
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
   }
 
   // ════════════════════════════════════════════════════════════
